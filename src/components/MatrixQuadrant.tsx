@@ -15,32 +15,32 @@ interface MatrixQuadrantProps {
 
 const colorClasses = {
   red: {
-    border: 'border-red-200',
-    bg: 'bg-red-50',
-    header: 'bg-red-100 border-red-200',
-    text: 'text-red-900',
-    subtitle: 'text-red-700'
+    border: 'border-red-200 dark:border-red-900',
+    bg: 'bg-red-50 dark:bg-red-950/30',
+    header: 'bg-red-100 dark:bg-red-950/50 border-red-200 dark:border-red-900',
+    text: 'text-red-900 dark:text-red-200',
+    subtitle: 'text-red-700 dark:text-red-400'
   },
   blue: {
-    border: 'border-blue-200',
-    bg: 'bg-blue-50',
-    header: 'bg-blue-100 border-blue-200',
-    text: 'text-blue-900',
-    subtitle: 'text-blue-700'
+    border: 'border-blue-200 dark:border-blue-900',
+    bg: 'bg-blue-50 dark:bg-blue-950/30',
+    header: 'bg-blue-100 dark:bg-blue-950/50 border-blue-200 dark:border-blue-900',
+    text: 'text-blue-900 dark:text-blue-200',
+    subtitle: 'text-blue-700 dark:text-blue-400'
   },
   yellow: {
-    border: 'border-yellow-200',
-    bg: 'bg-yellow-50',
-    header: 'bg-yellow-100 border-yellow-200',
-    text: 'text-yellow-900',
-    subtitle: 'text-yellow-700'
+    border: 'border-yellow-200 dark:border-yellow-900',
+    bg: 'bg-yellow-50 dark:bg-yellow-950/30',
+    header: 'bg-yellow-100 dark:bg-yellow-950/50 border-yellow-200 dark:border-yellow-900',
+    text: 'text-yellow-900 dark:text-yellow-200',
+    subtitle: 'text-yellow-700 dark:text-yellow-400'
   },
   gray: {
-    border: 'border-slate-200',
-    bg: 'bg-slate-50',
-    header: 'bg-slate-100 border-slate-200',
-    text: 'text-slate-900',
-    subtitle: 'text-slate-700'
+    border: 'border-slate-200 dark:border-neutral-700',
+    bg: 'bg-slate-50 dark:bg-neutral-800/50',
+    header: 'bg-slate-100 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700',
+    text: 'text-slate-900 dark:text-neutral-200',
+    subtitle: 'text-slate-700 dark:text-neutral-400'
   }
 };
 
@@ -101,7 +101,7 @@ export function MatrixQuadrant({
       <div className={`p-4 flex-1 ${colors.bg}`}>
         <div className="space-y-3">
           {sortedTasks.length === 0 ? (
-            <p className="text-slate-400 text-center py-8">No tasks in this quadrant</p>
+            <p className="text-slate-400 dark:text-neutral-500 text-center py-8">No tasks in this quadrant</p>
           ) : (
             sortedTasks.map(task => (
               <TaskCard

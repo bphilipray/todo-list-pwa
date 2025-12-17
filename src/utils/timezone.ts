@@ -59,53 +59,33 @@ export function getTimezoneAbbreviation(timezone: string): string {
 
 // Check if a task is due soon (within next hour)
 export function isTaskDueSoon(dueDate?: number, dueTime?: string, timezone?: string): boolean {
-  if (!dueDate || !dueTime || !timezone) return false;
-  
+  if (!dueDate) return false;
+
+  // Use default timezone if not provided
+  const tz = timezone || detectTimezone();
+
   try {
-    // Parse the task's due date and time in the task's timezone
     const taskDueDate = new Date(dueDate);
-    const [hours, minutes] = dueTime.split(':');
-    
-    // Create a date string in ISO format for the task's timezone
-    const year = taskDueDate.getFullYear();
-    const month = String(taskDueDate.getMonth() + 1).padStart(2, '0');
-    const day = String(taskDueDate.getDate()).padStart(2, '0');
-    const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
-    
-    // Parse this as a date string in the task's timezone
-    const dateTimeStr = `${year}-${month}-${day}T${timeStr}`;
-    
-    // Convert to a timestamp using the Intl API to respect the timezone
-    // Create a date in the task's timezone
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
-    
-    // Create the task datetime by combining date and time
-    const taskDateTime = new Date(taskDueDate);
-    taskDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    
     const now = new Date();
-    const diffMs = taskDateTime.getTime() - now.getTime();
-    const diffMinutes = Math.floor(diffMs / 60000);
-    
-    console.log('Task Due Soon Check:', {
-      taskTitle: 'checking',
-      taskDateTime: taskDateTime.toISOString(),
-      now: now.toISOString(),
-      diffMinutes,
-      timezone
-    });
-    
-    // Due within next 60 minutes and not in the past
-    return diffMinutes > 0 && diffMinutes <= 60;
+
+    // If time is set, check if due within the next hour
+    if (dueTime) {
+      const [hours, minutes] = dueTime.split(':');
+      const taskDateTime = new Date(taskDueDate);
+      taskDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      const diffMs = taskDateTime.getTime() - now.getTime();
+      const diffMinutes = Math.floor(diffMs / 60000);
+
+      // Due within next 60 minutes and not in the past
+      return diffMinutes > 0 && diffMinutes <= 60;
+    }
+
+    // If no time set, check if due today and it's past noon (reminder for end of day)
+    const isToday = taskDueDate.toDateString() === now.toDateString();
+    const isPastNoon = now.getHours() >= 12;
+
+    return isToday && isPastNoon;
   } catch (error) {
     console.error('Error checking if task is due soon:', error);
     return false;
@@ -114,15 +94,22 @@ export function isTaskDueSoon(dueDate?: number, dueTime?: string, timezone?: str
 
 // Check if a task is overdue
 export function isTaskOverdue(dueDate?: number, dueTime?: string, timezone?: string): boolean {
-  if (!dueDate || !dueTime || !timezone) return false;
-  
+  if (!dueDate) return false;
+
   try {
-    const [hours, minutes] = dueTime.split(':');
     const taskDate = new Date(dueDate);
-    taskDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    
     const now = new Date();
-    return taskDate.getTime() < now.getTime();
+
+    if (dueTime) {
+      const [hours, minutes] = dueTime.split(':');
+      taskDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      return taskDate.getTime() < now.getTime();
+    }
+
+    // If no time set, check if the date has passed (compare dates only)
+    const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+    const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return taskDateOnly.getTime() < nowDateOnly.getTime();
   } catch (error) {
     return false;
   }

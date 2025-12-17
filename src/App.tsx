@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { TouchBackend } from 'react-dnd-touch-backend';
 import { MatrixQuadrant } from './components/MatrixQuadrant';
 import { AddTaskForm } from './components/AddTaskForm';
 import { TaskFilter } from './components/TaskFilter';
@@ -14,9 +15,14 @@ import { TaskAlarmNotification } from './components/TaskAlarmNotification';
 import { Toaster } from './components/ui/sonner';
 import { Task, Quadrant } from './types/task';
 import { filterTasksByDates } from './utils/dateFilters';
-import { BarChart3, X } from 'lucide-react';
+import { BarChart3, X, Loader2 } from 'lucide-react';
 
 type FilterType = 'all' | 'active' | 'completed';
+
+// Detect if the device supports touch
+const isTouchDevice = () => {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+};
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -24,6 +30,7 @@ export default function App() {
   const [showStats, setShowStats] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load theme from localStorage on mount
   useEffect(() => {
@@ -49,6 +56,8 @@ export default function App() {
         console.error('Error loading tasks from localStorage:', error);
       }
     }
+    // Short delay to ensure styles are loaded
+    setTimeout(() => setIsLoading(false), 100);
   }, []);
 
   // Save tasks to localStorage whenever they change
@@ -85,18 +94,33 @@ export default function App() {
     localStorage.setItem('eisenhower-theme', newTheme);
   };
 
+  // Select the appropriate DnD backend based on device type
+  const dndBackend = isTouchDevice() ? TouchBackend : HTML5Backend;
+  const dndOptions = isTouchDevice() ? { enableMouseEvents: true } : undefined;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-neutral-800 dark:to-neutral-900">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <Toaster richColors position="top-right" />
       <TaskAlarmNotification tasks={tasks} />
       <AppSidebar>
-        <DateRangeCalendar 
+        <DateRangeCalendar
           selectedDates={selectedDates}
           onDatesChange={setSelectedDates}
         />
       </AppSidebar>
-      <DndProvider backend={HTML5Backend}>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-neutral-950 dark:to-neutral-900 p-4 md:p-8 w-full">
+      <DndProvider backend={dndBackend} options={dndOptions}>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-neutral-800 dark:to-neutral-900 p-4 md:p-8 w-full">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
             <header className="text-center mb-8 relative">

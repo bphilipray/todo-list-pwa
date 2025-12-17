@@ -116,7 +116,7 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
 
   if (isEditing) {
     return (
-      <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2">
+      <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg p-3 space-y-2">
         <Input
           value={editTitle}
           onChange={(e) => setEditTitle(e.target.value)}
@@ -233,27 +233,27 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
   const dueDateInfo = getDueDateInfo();
 
   return (
-    <div 
+    <div
       ref={drag}
-      className={`bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md transition-shadow group cursor-move ${
+      className={`bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg p-3 hover:shadow-md transition-shadow group cursor-move ${
         isDragging ? 'opacity-50' : ''
       }`}
     >
       <div className="flex items-start gap-3">
-        <div className="text-slate-400 mt-0.5">
+        <div className="text-slate-400 dark:text-neutral-500 mt-0.5">
           <GripVertical className="w-4 h-4" />
         </div>
         <Checkbox
           checked={task.completed}
           onCheckedChange={handleToggleComplete}
-          className="mt-0.5"
+          className="mt-0.5 border-slate-300 dark:border-neutral-500"
         />
         <div className="flex-1 min-w-0">
-          <h3 className={`text-slate-900 ${task.completed ? 'line-through text-slate-500' : ''}`}>
+          <h3 className={`text-slate-900 dark:text-neutral-100 ${task.completed ? 'line-through text-slate-500 dark:text-neutral-500' : ''}`}>
             {task.title}
           </h3>
           {task.description && (
-            <p className={`text-slate-600 text-sm mt-1 ${task.completed ? 'line-through text-slate-400' : ''}`}>
+            <p className={`text-slate-600 dark:text-neutral-400 text-sm mt-1 ${task.completed ? 'line-through text-slate-400 dark:text-neutral-600' : ''}`}>
               {task.description}
             </p>
           )}
@@ -279,12 +279,12 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
             )}
           </div>
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           <Button
             size="sm"
             variant="ghost"
             onClick={() => setIsEditing(true)}
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-100"
           >
             <Pencil className="w-4 h-4" />
           </Button>
@@ -292,7 +292,7 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
             size="sm"
             variant="ghost"
             onClick={() => onDelete(task.id)}
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="h-8 w-8 p-0 text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
           >
             <Trash2 className="w-4 h-4" />
           </Button>

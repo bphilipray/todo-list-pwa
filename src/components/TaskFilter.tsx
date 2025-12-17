@@ -20,7 +20,7 @@ export function TaskFilter({ currentFilter, onFilterChange, taskCount }: TaskFil
 
   return (
     <div className="flex justify-center mt-6">
-      <div className="inline-flex bg-white rounded-lg border border-slate-200 p-1 gap-1">
+      <div className="inline-flex bg-white dark:bg-neutral-800 rounded-lg border border-slate-200 dark:border-neutral-700 p-1 gap-1">
         {filters.map(({ type, label, icon }) => (
           <Button
             key={type}
