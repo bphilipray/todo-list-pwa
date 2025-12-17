@@ -4,6 +4,7 @@
   import path from 'path';
 
   export default defineConfig({
+    base: '/todo-list-pwa/',
     plugins: [react()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
