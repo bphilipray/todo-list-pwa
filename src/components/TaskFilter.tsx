@@ -20,14 +20,14 @@ export function TaskFilter({ currentFilter, onFilterChange, taskCount }: TaskFil
 
   return (
     <div className="flex justify-center mt-6">
-      <div className="inline-flex bg-white dark:bg-neutral-800 rounded-lg border border-slate-200 dark:border-neutral-700 p-1 gap-1">
+      <div className="inline-flex bg-[#2d2d2b] rounded-lg border border-[#586e75]/30 p-1 gap-1">
         {filters.map(({ type, label, icon }) => (
           <Button
             key={type}
             variant={currentFilter === type ? 'default' : 'ghost'}
             size="sm"
             onClick={() => onFilterChange(type)}
-            className="gap-2"
+            className={`gap-2 ${currentFilter === type ? 'bg-[#268bd2] text-[#fdf6e3] hover:bg-[#268bd2]/80' : 'text-[#93a1a1] hover:text-[#fdf6e3] hover:bg-[#586e75]/20'}`}
           >
             {icon}
             <span className="hidden sm:inline">{label}</span>

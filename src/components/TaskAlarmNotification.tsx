@@ -100,25 +100,25 @@ export function TaskAlarmNotification({ tasks }: TaskAlarmNotificationProps) {
   if ('Notification' in window && notificationPermission !== 'granted') {
     return (
       <div className="fixed bottom-4 right-4 z-50">
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-slate-200 dark:border-neutral-700 p-4 max-w-sm">
+        <div className="bg-[#2d2d2b] rounded-lg shadow-lg border border-[#586e75]/30 p-4 max-w-sm">
           <div className="flex items-start gap-3">
             {notificationPermission === 'denied' ? (
-              <BellOff className="w-5 h-5 text-slate-400 mt-0.5" />
+              <BellOff className="w-5 h-5 text-[#657b83] mt-0.5" />
             ) : (
-              <Bell className="w-5 h-5 text-primary mt-0.5" />
+              <Bell className="w-5 h-5 text-[#b58900] mt-0.5" />
             )}
             <div className="flex-1">
-              <h4 className="text-slate-900 dark:text-white mb-1">Task Notifications</h4>
+              <h4 className="text-[#fdf6e3] mb-1">Task Notifications</h4>
               {notificationPermission === 'denied' ? (
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-[#839496]">
                   Notifications are blocked. Enable them in your browser settings to get alerts.
                 </p>
               ) : (
                 <>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                  <p className="text-sm text-[#839496] mb-3">
                     Get notified when tasks are due within the next hour.
                   </p>
-                  <Button size="sm" onClick={requestNotificationPermission} className="w-full">
+                  <Button size="sm" onClick={requestNotificationPermission} className="w-full bg-[#268bd2] hover:bg-[#268bd2]/80 text-[#fdf6e3]">
                     Enable Notifications
                   </Button>
                 </>

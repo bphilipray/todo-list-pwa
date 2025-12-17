@@ -63,46 +63,46 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
 
   const getDueDateInfo = () => {
     if (!task.dueDate) return null;
-    
+
     const dueDate = new Date(task.dueDate);
     const now = new Date();
     const daysUntilDue = differenceInDays(dueDate, now);
-    
+
     if (isPast(dueDate) && !isToday(dueDate) && !task.completed) {
       return {
         text: `Overdue by ${Math.abs(daysUntilDue)} day${Math.abs(daysUntilDue) !== 1 ? 's' : ''}`,
-        color: 'text-red-600 bg-red-50 border-red-200',
+        color: 'text-[#dc322f] bg-[#dc322f]/10 border-[#dc322f]/30',
         icon: <AlertCircle className="w-3 h-3" />
       };
     }
-    
+
     if (isToday(dueDate)) {
       return {
         text: 'Due today',
-        color: 'text-orange-600 bg-orange-50 border-orange-200',
+        color: 'text-[#cb4b16] bg-[#cb4b16]/10 border-[#cb4b16]/30',
         icon: <Clock className="w-3 h-3" />
       };
     }
-    
+
     if (isTomorrow(dueDate)) {
       return {
         text: 'Due tomorrow',
-        color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+        color: 'text-[#b58900] bg-[#b58900]/10 border-[#b58900]/30',
         icon: <CalendarIcon className="w-3 h-3" />
       };
     }
-    
+
     if (daysUntilDue <= 7) {
       return {
         text: `Due in ${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''}`,
-        color: 'text-blue-600 bg-blue-50 border-blue-200',
+        color: 'text-[#268bd2] bg-[#268bd2]/10 border-[#268bd2]/30',
         icon: <CalendarIcon className="w-3 h-3" />
       };
     }
-    
+
     return {
       text: format(dueDate, 'MMM d'),
-      color: 'text-slate-600 bg-slate-50 border-slate-200',
+      color: 'text-[#839496] bg-[#586e75]/10 border-[#586e75]/30',
       icon: <CalendarIcon className="w-3 h-3" />
     };
   };
@@ -116,7 +116,7 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
 
   if (isEditing) {
     return (
-      <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg p-3 space-y-2">
+      <div className="bg-[#2d2d2b] border border-[#586e75]/30 rounded-lg p-3 space-y-2">
         <Input
           value={editTitle}
           onChange={(e) => setEditTitle(e.target.value)}
@@ -235,25 +235,25 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
   return (
     <div
       ref={drag}
-      className={`bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg p-3 hover:shadow-md transition-shadow group cursor-move ${
+      className={`bg-[#2d2d2b] border border-[#586e75]/30 rounded-lg p-3 hover:shadow-md hover:shadow-[#000]/20 transition-shadow group cursor-move ${
         isDragging ? 'opacity-50' : ''
       }`}
     >
       <div className="flex items-start gap-3">
-        <div className="text-slate-400 dark:text-neutral-500 mt-0.5">
+        <div className="text-[#657b83] mt-0.5">
           <GripVertical className="w-4 h-4" />
         </div>
         <Checkbox
           checked={task.completed}
           onCheckedChange={handleToggleComplete}
-          className="mt-0.5 border-slate-300 dark:border-neutral-500"
+          className="mt-0.5 border-[#586e75] data-[state=checked]:bg-[#859900] data-[state=checked]:border-[#859900]"
         />
         <div className="flex-1 min-w-0">
-          <h3 className={`text-slate-900 dark:text-neutral-100 ${task.completed ? 'line-through text-slate-500 dark:text-neutral-500' : ''}`}>
+          <h3 className={`text-[#fdf6e3] ${task.completed ? 'line-through text-[#657b83]' : ''}`}>
             {task.title}
           </h3>
           {task.description && (
-            <p className={`text-slate-600 dark:text-neutral-400 text-sm mt-1 ${task.completed ? 'line-through text-slate-400 dark:text-neutral-600' : ''}`}>
+            <p className={`text-[#93a1a1] text-sm mt-1 ${task.completed ? 'line-through text-[#586e75]' : ''}`}>
               {task.description}
             </p>
           )}
@@ -284,7 +284,7 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
             size="sm"
             variant="ghost"
             onClick={() => setIsEditing(true)}
-            className="h-8 w-8 p-0 text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-100"
+            className="h-8 w-8 p-0 text-[#839496] hover:text-[#fdf6e3] hover:bg-[#586e75]/20"
           >
             <Pencil className="w-4 h-4" />
           </Button>
@@ -292,7 +292,7 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
             size="sm"
             variant="ghost"
             onClick={() => onDelete(task.id)}
-            className="h-8 w-8 p-0 text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+            className="h-8 w-8 p-0 text-[#dc322f] hover:text-[#fdf6e3] hover:bg-[#dc322f]/20"
           >
             <Trash2 className="w-4 h-4" />
           </Button>

@@ -13,34 +13,35 @@ interface MatrixQuadrantProps {
   onMoveTask: (taskId: string, newQuadrant: Quadrant) => void;
 }
 
+// Solarized-inspired colors for each quadrant
 const colorClasses = {
   red: {
-    border: 'border-red-200 dark:border-red-900',
-    bg: 'bg-red-50 dark:bg-red-950/30',
-    header: 'bg-red-100 dark:bg-red-950/50 border-red-200 dark:border-red-900',
-    text: 'text-red-900 dark:text-red-200',
-    subtitle: 'text-red-700 dark:text-red-400'
+    border: 'border-[#dc322f]/30',
+    bg: 'bg-[#dc322f]/10',
+    header: 'bg-[#dc322f]/20 border-[#dc322f]/30',
+    text: 'text-[#fdf6e3]',
+    subtitle: 'text-[#dc322f]'
   },
   blue: {
-    border: 'border-blue-200 dark:border-blue-900',
-    bg: 'bg-blue-50 dark:bg-blue-950/30',
-    header: 'bg-blue-100 dark:bg-blue-950/50 border-blue-200 dark:border-blue-900',
-    text: 'text-blue-900 dark:text-blue-200',
-    subtitle: 'text-blue-700 dark:text-blue-400'
+    border: 'border-[#268bd2]/30',
+    bg: 'bg-[#268bd2]/10',
+    header: 'bg-[#268bd2]/20 border-[#268bd2]/30',
+    text: 'text-[#fdf6e3]',
+    subtitle: 'text-[#268bd2]'
   },
   yellow: {
-    border: 'border-yellow-200 dark:border-yellow-900',
-    bg: 'bg-yellow-50 dark:bg-yellow-950/30',
-    header: 'bg-yellow-100 dark:bg-yellow-950/50 border-yellow-200 dark:border-yellow-900',
-    text: 'text-yellow-900 dark:text-yellow-200',
-    subtitle: 'text-yellow-700 dark:text-yellow-400'
+    border: 'border-[#b58900]/30',
+    bg: 'bg-[#b58900]/10',
+    header: 'bg-[#b58900]/20 border-[#b58900]/30',
+    text: 'text-[#fdf6e3]',
+    subtitle: 'text-[#b58900]'
   },
   gray: {
-    border: 'border-slate-200 dark:border-neutral-700',
-    bg: 'bg-slate-50 dark:bg-neutral-800/50',
-    header: 'bg-slate-100 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700',
-    text: 'text-slate-900 dark:text-neutral-200',
-    subtitle: 'text-slate-700 dark:text-neutral-400'
+    border: 'border-[#586e75]/30',
+    bg: 'bg-[#586e75]/10',
+    header: 'bg-[#586e75]/20 border-[#586e75]/30',
+    text: 'text-[#fdf6e3]',
+    subtitle: 'text-[#839496]'
   }
 };
 
@@ -88,10 +89,10 @@ export function MatrixQuadrant({
   });
 
   return (
-    <div 
+    <div
       ref={drop}
       className={`border-2 rounded-lg overflow-hidden transition-all flex flex-col ${colors.border} ${
-        isOver ? 'ring-4 ring-blue-300 scale-105' : ''
+        isOver ? 'ring-4 ring-[#2aa198] scale-105' : ''
       }`}
     >
       <div className={`p-4 border-b-2 ${colors.header}`}>
@@ -101,7 +102,7 @@ export function MatrixQuadrant({
       <div className={`p-4 flex-1 ${colors.bg}`}>
         <div className="space-y-3">
           {sortedTasks.length === 0 ? (
-            <p className="text-slate-400 dark:text-neutral-500 text-center py-8">No tasks in this quadrant</p>
+            <p className="text-[#657b83] text-center py-8">No tasks in this quadrant</p>
           ) : (
             sortedTasks.map(task => (
               <TaskCard

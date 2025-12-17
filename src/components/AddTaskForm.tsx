@@ -80,7 +80,7 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
         <Button
           onClick={() => setIsOpen(true)}
           size="lg"
-          className="gap-2 w-full sm:w-auto"
+          className="gap-2 w-full sm:w-auto bg-[#268bd2] hover:bg-[#268bd2]/80 text-[#fdf6e3]"
         >
           <Plus className="w-5 h-5" />
           Add New Task
@@ -90,11 +90,11 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
   }
 
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card className="max-w-2xl mx-auto bg-[#2d2d2b] border-[#586e75]/30">
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="task-title">Task Title</Label>
+            <Label htmlFor="task-title" className="text-[#93a1a1]">Task Title</Label>
             <Input
               id="task-title"
               value={title}
@@ -106,7 +106,7 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
           </div>
 
           <div>
-            <Label htmlFor="task-description">Description (Optional)</Label>
+            <Label htmlFor="task-description" className="text-[#93a1a1]">Description (Optional)</Label>
             <Textarea
               id="task-description"
               value={description}
@@ -117,20 +117,20 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
           </div>
 
           <div className="space-y-3">
-            <Label>Categorize Your Task</Label>
+            <Label className="text-[#93a1a1]">Categorize Your Task</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setIsUrgent(!isUrgent)}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   isUrgent
-                    ? 'border-orange-500 bg-orange-50'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+                    ? 'border-[#cb4b16] bg-[#cb4b16]/10'
+                    : 'border-[#586e75]/30 bg-[#232321] hover:border-[#586e75]'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                    isUrgent ? 'border-orange-500 bg-orange-500' : 'border-slate-300'
+                    isUrgent ? 'border-[#cb4b16] bg-[#cb4b16]' : 'border-[#586e75]'
                   }`}>
                     {isUrgent && (
                       <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -138,7 +138,7 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
                       </svg>
                     )}
                   </div>
-                  <span className={isUrgent ? 'text-orange-900' : 'text-slate-700'}>
+                  <span className={isUrgent ? 'text-[#cb4b16]' : 'text-[#93a1a1]'}>
                     Urgent
                   </span>
                 </div>
@@ -149,13 +149,13 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
                 onClick={() => setIsImportant(!isImportant)}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   isImportant
-                    ? 'border-purple-500 bg-purple-50'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+                    ? 'border-[#6c71c4] bg-[#6c71c4]/10'
+                    : 'border-[#586e75]/30 bg-[#232321] hover:border-[#586e75]'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                    isImportant ? 'border-purple-500 bg-purple-500' : 'border-slate-300'
+                    isImportant ? 'border-[#6c71c4] bg-[#6c71c4]' : 'border-[#586e75]'
                   }`}>
                     {isImportant && (
                       <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -163,7 +163,7 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
                       </svg>
                     )}
                   </div>
-                  <span className={isImportant ? 'text-purple-900' : 'text-slate-700'}>
+                  <span className={isImportant ? 'text-[#6c71c4]' : 'text-[#93a1a1]'}>
                     Important
                   </span>
                 </div>
@@ -172,7 +172,7 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
           </div>
 
           <div>
-            <Label>Due Date (Optional)</Label>
+            <Label className="text-[#93a1a1]">Due Date (Optional)</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -210,7 +210,7 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
           </div>
 
           <div>
-            <Label>Due Time (Optional)</Label>
+            <Label className="text-[#93a1a1]">Due Time (Optional)</Label>
             <Input
               type="time"
               value={dueTime}
@@ -220,11 +220,11 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
           </div>
 
           <div>
-            <Label>Timezone</Label>
+            <Label className="text-[#93a1a1]">Timezone</Label>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                <Globe className="w-4 h-4" />
-                <span className="text-sm">Auto-detected: {timezone}</span>
+              <div className="flex items-center gap-2 p-2 bg-[#232321] border border-[#586e75]/30 rounded-md">
+                <Globe className="w-4 h-4 text-[#839496]" />
+                <span className="text-sm text-[#93a1a1]">Auto-detected: {timezone}</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -237,9 +237,9 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
                       setTimezone(detectTimezone());
                     }
                   }}
-                  className="rounded"
+                  className="rounded border-[#586e75]"
                 />
-                <Label htmlFor="manual-tz" className="cursor-pointer">Manually select timezone</Label>
+                <Label htmlFor="manual-tz" className="cursor-pointer text-[#93a1a1]">Manually select timezone</Label>
               </div>
               {useManualTimezone && (
                 <Select
@@ -262,7 +262,7 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1 bg-[#859900] hover:bg-[#859900]/80 text-[#fdf6e3]">
               Add Task
             </Button>
             <Button
@@ -278,6 +278,7 @@ export function AddTaskForm({ onAddTask }: AddTaskFormProps) {
                 setDueTime('');
                 setUseManualTimezone(false);
               }}
+              className="border-[#586e75]/30 text-[#93a1a1] hover:bg-[#586e75]/20 hover:text-[#fdf6e3]"
             >
               Cancel
             </Button>

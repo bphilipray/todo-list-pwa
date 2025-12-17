@@ -6,7 +6,6 @@ import { MatrixQuadrant } from './components/MatrixQuadrant';
 import { AddTaskForm } from './components/AddTaskForm';
 import { TaskFilter } from './components/TaskFilter';
 import { TaskStats } from './components/TaskStats';
-import { ThemeToggle } from './components/ThemeToggle';
 import { AppSidebar } from './components/AppSidebar';
 import { DateRangeCalendar } from './components/DateRangeCalendar';
 import { Button } from './components/ui/button';
@@ -28,23 +27,8 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
   const [showStats, setShowStats] = useState(true);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Load theme from localStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('eisenhower-theme') as 'light' | 'dark' | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
-    } else {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(prefersDark ? 'dark' : 'light');
-      document.documentElement.classList.toggle('dark', prefersDark);
-    }
-  }, []);
 
   // Load tasks from localStorage on mount
   useEffect(() => {
@@ -87,23 +71,16 @@ export default function App() {
     return filtered;
   };
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
-    localStorage.setItem('eisenhower-theme', newTheme);
-  };
-
   // Select the appropriate DnD backend based on device type
   const dndBackend = isTouchDevice() ? TouchBackend : HTML5Backend;
   const dndOptions = isTouchDevice() ? { enableMouseEvents: true } : undefined;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-neutral-800 dark:to-neutral-900">
+      <div className="min-h-screen flex items-center justify-center bg-[#232321]">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-[#b58900]" />
+          <p className="text-[#93a1a1]">Loading...</p>
         </div>
       </div>
     );
@@ -120,18 +97,15 @@ export default function App() {
         />
       </AppSidebar>
       <DndProvider backend={dndBackend} options={dndOptions}>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-neutral-800 dark:to-neutral-900 p-4 md:p-8 w-full">
+        <div className="min-h-screen bg-[#232321] p-4 md:p-8 w-full">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
             <header className="text-center mb-8 relative">
               <div className="absolute left-0 top-0">
-                <SidebarTrigger />
+                <SidebarTrigger className="text-[#93a1a1] hover:text-[#fdf6e3] hover:bg-[#2d2d2b]" />
               </div>
-              <div className="absolute right-0 top-0">
-                <ThemeToggle theme={theme} onToggle={toggleTheme} />
-              </div>
-              <h1 className="mb-2">Eisenhower Matrix</h1>
-              <p className="text-muted-foreground">Organize your tasks by urgency and importance</p>
+              <h1 className="mb-2 text-[#fdf6e3]">Eisenhower Matrix</h1>
+              <p className="text-[#839496]">Organize your tasks by urgency and importance</p>
             </header>
 
             {/* Add Task Form */}
@@ -236,13 +210,13 @@ export default function App() {
             </div>
 
             {/* Axis Labels */}
-            <div className="mt-8 flex justify-center items-center gap-8 text-muted-foreground text-sm">
+            <div className="mt-8 flex justify-center items-center gap-8 text-[#657b83] text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-border"></div>
+                <div className="w-8 h-0.5 bg-[#586e75]"></div>
                 <span className="hidden sm:inline">Importance →</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-0.5 h-8 bg-border"></div>
+                <div className="w-0.5 h-8 bg-[#586e75]"></div>
                 <span className="hidden sm:inline">Urgency ↑</span>
               </div>
             </div>

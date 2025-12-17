@@ -4,8 +4,8 @@
   "description": "Organize your tasks by urgency and importance using the Eisenhower Matrix",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#0f172a",
+  "background_color": "#232321",
+  "theme_color": "#232321",
   "orientation": "portrait-primary",
   "icons": [
     {
