@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "81849255116",
+    "project_id": "taskmatrix-app",
+    "storage_bucket": "taskmatrix-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:81849255116:android:f405abced73f67dc2a6e69",
+        "android_client_info": {
+          "package_name": "com.bphil.task_matrix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5_RQP04P7YJzrtAL8G40xnWyeZUntZFM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

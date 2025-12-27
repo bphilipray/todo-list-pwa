@@ -1,29 +1,16 @@
-# Eisenhower Matrix To-Do List
+# task_matrix
 
-A task management app using the Eisenhower Matrix to organize tasks by urgency and importance. Built with React, TypeScript, and Vite.
-
-Original design: [Figma](https://www.figma.com/design/9OE01dYljR2a6oI02N0aTY/Eisenhower-Matrix-To-Do-List)
-
-## Features
-
-- Four-quadrant matrix: Do First, Schedule, Delegate, Eliminate
-- Drag and drop tasks between quadrants
-- Task filtering by status and date range
-- Due date and time with alarm notifications
-- Dark/light theme toggle
-- Data persisted to localStorage
+A new Flutter project.
 
 ## Getting Started
 
-```bash
-npm install
-npm run dev
-```
+This project is a starting point for a Flutter application.
 
-Opens at http://localhost:3000
+A few resources to get you started if this is your first Flutter project:
 
-## Build
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-```bash
-npm run build
-```
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.

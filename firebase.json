@@ -1,0 +1,1 @@
+{"flutter":{"platforms":{"android":{"default":{"projectId":"taskmatrix-app","appId":"1:81849255116:android:f405abced73f67dc2a6e69","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"taskmatrix-app","configurations":{"android":"1:81849255116:android:f405abced73f67dc2a6e69"}}}}}}
