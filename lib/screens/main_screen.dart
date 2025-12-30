@@ -495,10 +495,21 @@ class _MainScreenState extends State<MainScreen> {
     // Remove from calendar
     _removeTaskFromCalendar(task);
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    // Use global ScaffoldMessenger key to handle nested scaffolds
+    final messenger = TaskMatrixAppState.scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+
+    // Clear any existing snackbars first
+    messenger.clearSnackBars();
+
+    messenger.showSnackBar(
       SnackBar(
-        content: Text('Deleted "${task.title}"'),
+        content: Text('Task deleted', style: TextStyle(color: colors.textPrimary)),
         backgroundColor: colors.surface,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         action: SnackBarAction(
           label: 'Undo',
           textColor: colors.notUrgentImportant,

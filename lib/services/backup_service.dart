@@ -87,8 +87,8 @@ class BackupService {
       // Share the file
       await Share.shareXFiles(
         [XFile(file.path)],
-        subject: 'Task Matrix Backup',
-        text: 'Task Matrix backup from ${DateTime.now().toString().split('.').first}',
+        subject: 'Quadrant Backup',
+        text: 'Quadrant backup from ${DateTime.now().toString().split('.').first}',
       );
 
       return true;

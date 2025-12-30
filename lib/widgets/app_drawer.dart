@@ -62,7 +62,7 @@ class AppDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Task Matrix',
+                    'Quadrant',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,

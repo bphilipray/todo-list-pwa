@@ -183,7 +183,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 32),
           Text(
-            'Task Matrix',
+            'Quadrant',
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,

@@ -346,7 +346,10 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colors.accent,
-        foregroundColor: colors.isDark ? colors.textPrimary : Colors.white,
+        // Use contrasting color based on accent brightness, not theme brightness
+        foregroundColor: colors.accent.computeLuminance() > 0.5
+            ? Colors.black
+            : Colors.white,
         elevation: 4,
       ),
       bottomSheetTheme: BottomSheetThemeData(

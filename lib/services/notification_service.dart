@@ -92,11 +92,17 @@ class NotificationService {
       // Request notification permission (Android 13+)
       final notificationGranted = await androidPlugin.requestNotificationsPermission();
 
-      // Request exact alarm permission (Android 12+)
-      // This opens settings if not granted
-      final exactAlarmGranted = await androidPlugin.requestExactAlarmsPermission();
+      // Check if exact alarms can be scheduled (Android 12+)
+      // Note: On Android 14+, USE_EXACT_ALARM doesn't require user permission
+      // but SCHEDULE_EXACT_ALARM does
+      final canScheduleExact = await androidPlugin.canScheduleExactNotifications() ?? false;
 
-      return (notificationGranted ?? false) && (exactAlarmGranted ?? true);
+      if (!canScheduleExact) {
+        // Try to request exact alarm permission - this opens settings on some devices
+        await androidPlugin.requestExactAlarmsPermission();
+      }
+
+      return notificationGranted ?? false;
     }
 
     // Request iOS permissions
@@ -113,6 +119,17 @@ class NotificationService {
     }
 
     return true;
+  }
+
+  /// Check if exact alarms can be scheduled
+  Future<bool> canScheduleExactAlarms() async {
+    final androidPlugin =
+        _notifications.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      return await androidPlugin.canScheduleExactNotifications() ?? false;
+    }
+    return true; // iOS doesn't have this restriction
   }
 
   Future<void> scheduleTaskNotification(Task task) async {
@@ -196,13 +213,19 @@ class NotificationService {
         notificationTitle = '⏰ Reminder: ${offset.label}';
       }
 
+      // Check if we can use exact scheduling
+      final canUseExact = await canScheduleExactAlarms();
+
       await _notifications.zonedSchedule(
         notificationId,
         notificationTitle,
         task.title,
         tzScheduledTime,
         details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        // Use exact if available, otherwise fall back to inexact
+        androidScheduleMode: canUseExact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: null,

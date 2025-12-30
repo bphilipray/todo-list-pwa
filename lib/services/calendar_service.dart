@@ -71,19 +71,76 @@ class CalendarService {
 
   // --- Calendar Operations ---
 
-  /// Get list of available writable calendars
-  Future<List<Calendar>> getCalendars() async {
+  /// Get list of available calendars
+  /// Returns a record with calendars and diagnostic info
+  /// Note: We return ALL calendars now, as isReadOnly detection is unreliable on some devices
+  Future<({List<Calendar> calendars, String? diagnosticInfo})> getCalendarsWithDiagnostics() async {
     if (!_hasPermissions) {
       final granted = await requestPermissions();
-      if (!granted) return [];
+      if (!granted) {
+        return (calendars: <Calendar>[], diagnosticInfo: 'Calendar permission not granted');
+      }
     }
 
     final result = await _deviceCalendar.retrieveCalendars();
     if (result.isSuccess && result.data != null) {
-      // Filter to only writable calendars
-      return result.data!.where((cal) => cal.isReadOnly == false).toList();
+      final allCalendars = result.data!;
+
+      // Debug: Log all calendars for troubleshooting
+      print('=== Found ${allCalendars.length} calendars ===');
+      for (final cal in allCalendars) {
+        print('Calendar: name="${cal.name}" | id="${cal.id}" | readOnly=${cal.isReadOnly} | account="${cal.accountName}" | type="${cal.accountType}"');
+      }
+
+      // Filter to only writable calendars with valid IDs
+      final validCalendars = allCalendars
+          .where((cal) =>
+              cal.id != null &&
+              cal.id!.isNotEmpty &&
+              cal.isReadOnly != true)  // Only writable calendars
+          .toList();
+
+      print('=== ${validCalendars.length} writable calendars with valid IDs ===');
+
+      if (validCalendars.isEmpty) {
+        final totalCount = allCalendars.length;
+        final readOnlyCount = allCalendars.where((c) => c.isReadOnly == true).length;
+        return (
+          calendars: <Calendar>[],
+          diagnosticInfo: allCalendars.isEmpty
+              ? 'No calendars found. Please install a calendar app (like Google Calendar) and add an account.'
+              : 'Found $totalCount calendar(s) but $readOnlyCount are read-only (holidays). No writable calendars available.'
+        );
+      }
+
+      // Sort calendars - prefer Google calendars first, then by name/account
+      validCalendars.sort((a, b) {
+        // Prioritize Google calendars
+        final aIsGoogle = a.accountType?.toLowerCase().contains('google') ?? false;
+        final bIsGoogle = b.accountType?.toLowerCase().contains('google') ?? false;
+        if (aIsGoogle && !bIsGoogle) return -1;
+        if (!aIsGoogle && bIsGoogle) return 1;
+        // Then sort by account name or calendar name
+        final aName = a.name ?? a.accountName ?? '';
+        final bName = b.name ?? b.accountName ?? '';
+        return aName.compareTo(bName);
+      });
+
+      return (calendars: validCalendars, diagnosticInfo: null);
     }
-    return [];
+
+    return (
+      calendars: <Calendar>[],
+      diagnosticInfo: result.errors.isNotEmpty
+          ? 'Error: ${result.errors.first.errorMessage}'
+          : 'Failed to retrieve calendars'
+    );
+  }
+
+  /// Get list of available writable calendars (simple version for backward compatibility)
+  Future<List<Calendar>> getCalendars() async {
+    final result = await getCalendarsWithDiagnostics();
+    return result.calendars;
   }
 
   /// Sync a single task to the calendar
@@ -225,6 +282,14 @@ class CalendarService {
       event.end = tz.TZDateTime(tz.local, dueDate.year, dueDate.month, dueDate.day);
       event.allDay = true;
     }
+
+    // Set default values for fields that might cause null pointer exceptions
+    // This fixes "Attempt to invoke virtual method 'int java.lang.Integer.intValue()' on a null object reference"
+    event.reminders = []; // Empty reminders list instead of null
+    event.availability = Availability.Busy;
+    event.status = EventStatus.Confirmed;
+
+    print('Calendar event created: title="${event.title}" start=${event.start} end=${event.end} allDay=${event.allDay}');
 
     return event;
   }

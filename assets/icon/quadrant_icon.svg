@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background with rounded corners -->
+  <rect x="0" y="0" width="512" height="512" rx="96" ry="96" fill="#4a4736"/>
+
+  <!-- Quadrant Grid with gap -->
+  <!-- Top-Left: Urgent + Important (Do First) - Terracotta -->
+  <rect x="40" y="40" width="206" height="206" rx="24" ry="24" fill="#C4785A"/>
+
+  <!-- Top-Right: Not Urgent + Important (Schedule) - Sage Green -->
+  <rect x="266" y="40" width="206" height="206" rx="24" ry="24" fill="#7A9E8C"/>
+
+  <!-- Bottom-Left: Urgent + Not Important (Delegate) - Gold -->
+  <rect x="40" y="266" width="206" height="206" rx="24" ry="24" fill="#C4A85A"/>
+
+  <!-- Bottom-Right: Not Urgent + Not Important (Drop) - Muted Olive -->
+  <rect x="266" y="266" width="206" height="206" rx="24" ry="24" fill="#8A8775"/>
+
+  <!-- Subtle checkmark in top-left quadrant to indicate priority -->
+  <path d="M100 143 L130 173 L186 107"
+        stroke="#FFFFFF"
+        stroke-width="16"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"
+        opacity="0.9"/>
+</svg>

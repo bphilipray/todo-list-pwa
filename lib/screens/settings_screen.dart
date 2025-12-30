@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/backup_service.dart';
 import '../services/calendar_service.dart';
 import '../services/cloud_sync_service.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import 'onboarding_screen.dart';
 
@@ -55,6 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _calendarSyncEnabled = false;
   String? _selectedCalendarId;
   List<Calendar> _availableCalendars = [];
+  String? _calendarDiagnosticInfo;
   bool _isLoadingCalendars = false;
   bool _isSyncingCalendar = false;
 
@@ -64,6 +66,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int get _inboxTasks => widget.tasks.where((t) => t.quadrant == null).length;
 
   AppColorTheme get _colors => context.appColors;
+
+  /// Returns appropriate text color (black or white) based on background luminance
+  Color _getContrastingTextColor(Color backgroundColor) {
+    final luminance = backgroundColor.computeLuminance();
+    return luminance > 0.5 ? Colors.black : Colors.white;
+  }
 
   @override
   void initState() {
@@ -87,10 +95,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final calendarId = await _calendarService.getSelectedCalendarId();
 
     if (enabled && _calendarService.hasPermissions) {
-      final calendars = await _calendarService.getCalendars();
+      final result = await _calendarService.getCalendarsWithDiagnostics();
       if (mounted) {
         setState(() {
-          _availableCalendars = calendars;
+          _availableCalendars = result.calendars;
+          _calendarDiagnosticInfo = result.diagnosticInfo;
         });
       }
     }
@@ -119,27 +128,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
 
-      // Load available calendars
+      // Load available calendars with diagnostics
       setState(() => _isLoadingCalendars = true);
-      final calendars = await _calendarService.getCalendars();
+      final result = await _calendarService.getCalendarsWithDiagnostics();
       if (mounted) {
         setState(() {
-          _availableCalendars = calendars;
+          _availableCalendars = result.calendars;
+          _calendarDiagnosticInfo = result.diagnosticInfo;
           _isLoadingCalendars = false;
         });
       }
 
-      if (calendars.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('No writable calendars found'),
-              backgroundColor: _colors.error,
-            ),
-          );
-        }
-        return;
-      }
+      // Continue to enable the toggle even if no calendars found
+      // so the UI can show the diagnostic info to the user
     } else {
       // Ask user if they want to remove existing events
       final removeEvents = await _showRemoveEventsDialog();
@@ -578,6 +579,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader('Data Management'),
           const SizedBox(height: 12),
           _buildDataManagementCard(),
+
+          const SizedBox(height: 24),
+
+          // Notifications Section
+          _buildSectionHeader('Notifications'),
+          const SizedBox(height: 12),
+          _buildNotificationsCard(),
 
           const SizedBox(height: 24),
 
@@ -1029,12 +1037,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       isExpanded: true,
                       dropdownColor: _colors.surface,
-                      items: _availableCalendars.map((cal) {
-                        return DropdownMenuItem(
-                          value: cal.id,
+                      items: _availableCalendars
+                          .where((cal) => cal.id != null && cal.id!.isNotEmpty)
+                          .map((cal) {
+                        // Build a meaningful display name from available properties
+                        final name = cal.name;
+                        final account = cal.accountName;
+                        final type = cal.accountType;
+
+                        String displayName;
+                        if (name != null && name.isNotEmpty) {
+                          displayName = account != null && account.isNotEmpty
+                              ? '$name ($account)'
+                              : name;
+                        } else if (account != null && account.isNotEmpty) {
+                          displayName = type != null && type.isNotEmpty
+                              ? '$account - $type'
+                              : account;
+                        } else {
+                          displayName = 'Calendar ${cal.id!.substring(0, 8)}...';
+                        }
+
+                        return DropdownMenuItem<String>(
+                          value: cal.id!,
                           child: Text(
-                            cal.name ?? 'Unknown Calendar',
+                            displayName,
                             style: TextStyle(color: _colors.textPrimary),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         );
                       }).toList(),
@@ -1061,23 +1090,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: _colors.warning.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.warning_rounded,
-                        color: _colors.warning,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'No writable calendars found',
-                          style: TextStyle(
-                            fontSize: 13,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.warning_rounded,
                             color: _colors.warning,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'No writable calendars found',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_calendarDiagnosticInfo != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _calendarDiagnosticInfo!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _colors.textSecondary,
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -1348,10 +1392,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool isLoading = false,
     bool isSecondary = false,
   }) {
+    final backgroundColor = isSecondary
+        ? _colors.surfaceLight.withOpacity(0.3)
+        : _colors.accent;
+    // Use contrasting text color for primary buttons, theme text for secondary
+    final textColor = isSecondary
+        ? _colors.textPrimary
+        : _getContrastingTextColor(_colors.accent);
+
     return Material(
-      color: isSecondary
-          ? _colors.surfaceLight.withOpacity(0.3)
-          : _colors.accent,
+      color: backgroundColor,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onPressed,
@@ -1367,14 +1417,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: _colors.textPrimary,
+                    color: textColor,
                   ),
                 )
               else
                 Icon(
                   icon,
                   size: 20,
-                  color: _colors.textPrimary,
+                  color: textColor,
                 ),
               const SizedBox(width: 8),
               Text(
@@ -1382,7 +1432,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: _colors.textPrimary,
+                  color: textColor,
                 ),
               ),
             ],
@@ -1390,6 +1440,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildNotificationsCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.notifications_active_rounded,
+                  color: _colors.accent,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Test Notifications',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: _colors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Send a test notification to verify reminders are working correctly on your device.',
+              style: TextStyle(
+                fontSize: 14,
+                color: _colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _sendTestNotification,
+                icon: const Icon(Icons.send_rounded),
+                label: const Text('Send Test Notification'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _colors.accent,
+                  side: BorderSide(color: _colors.accent),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _sendTestNotification() async {
+    final notificationService = NotificationService();
+
+    // Check permission status
+    final canScheduleExact = await notificationService.canScheduleExactAlarms();
+
+    // Show the test notification
+    await notificationService.showTestNotification();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            canScheduleExact
+                ? 'Test notification sent! Check your notification shade.'
+                : 'Test sent (inexact mode). Exact alarms not available on this device.',
+          ),
+          backgroundColor: _colors.success,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   Widget _buildStatsCard() {
@@ -1519,7 +1646,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Task Matrix',
+                        'Quadrant',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -1596,7 +1723,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           Text(
-                            'Learn how to use Task Matrix',
+                            'Learn how to use Quadrant',
                             style: TextStyle(
                               fontSize: 12,
                               color: _colors.textSecondary,

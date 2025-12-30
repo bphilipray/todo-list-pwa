@@ -152,7 +152,8 @@ class CloudSyncService {
     }
   }
 
-  // Sync: merge local and cloud data
+  // Sync: push local data to cloud (local is source of truth)
+  // This replaces cloud data with local data to properly handle deletions
   Future<({List<Task> tasks, List<Tag> tags, SyncResult result})> sync({
     required List<Task> localTasks,
     required List<Tag> localTags,
@@ -166,44 +167,58 @@ class CloudSyncService {
     }
 
     try {
-      // Download cloud data
-      final cloudData = await downloadAll();
-      if (!cloudData.result.success) {
-        return (
-          tasks: localTasks,
-          tags: localTags,
-          result: cloudData.result,
-        );
+      // First, delete all existing cloud data to handle local deletions
+      // Get current cloud task IDs
+      final cloudTasksSnapshot = await _tasksCollection.get();
+      final cloudTagsSnapshot = await _tagsCollection.get();
+
+      final batch = _firestore.batch();
+
+      // Delete cloud tasks that don't exist locally
+      final localTaskIds = localTasks.map((t) => t.id).toSet();
+      for (final doc in cloudTasksSnapshot.docs) {
+        if (!localTaskIds.contains(doc.id)) {
+          batch.delete(doc.reference);
+        }
       }
 
-      // Merge tasks (local wins for conflicts based on task ID)
-      final mergedTasks = _mergeTasks(localTasks, cloudData.tasks);
-
-      // Merge tags (local wins for conflicts based on tag ID)
-      final mergedTags = _mergeTags(localTags, cloudData.tags);
-
-      // Upload merged data
-      final uploadResult = await uploadAll(
-        tasks: mergedTasks,
-        tags: mergedTags,
-      );
-
-      if (!uploadResult.success) {
-        return (
-          tasks: localTasks,
-          tags: localTags,
-          result: uploadResult,
-        );
+      // Delete cloud tags that don't exist locally
+      final localTagIds = localTags.map((t) => t.id).toSet();
+      for (final doc in cloudTagsSnapshot.docs) {
+        if (!localTagIds.contains(doc.id)) {
+          batch.delete(doc.reference);
+        }
       }
+
+      // Upload all local tasks
+      for (final task in localTasks) {
+        final docRef = _tasksCollection.doc(task.id);
+        batch.set(docRef, _taskToFirestore(task));
+      }
+
+      // Upload all local tags
+      for (final tag in localTags) {
+        final docRef = _tagsCollection.doc(tag.id);
+        batch.set(docRef, _tagToFirestore(tag));
+      }
+
+      // Update metadata
+      batch.set(_metadataDoc, {
+        'lastSyncAt': FieldValue.serverTimestamp(),
+        'taskCount': localTasks.length,
+        'tagCount': localTags.length,
+      }, SetOptions(merge: true));
+
+      await batch.commit();
 
       return (
-        tasks: mergedTasks,
-        tags: mergedTags,
+        tasks: localTasks,
+        tags: localTags,
         result: SyncResult.success(
-          tasksUploaded: mergedTasks.length,
-          tagsUploaded: mergedTags.length,
-          tasksDownloaded: cloudData.tasks.length,
-          tagsDownloaded: cloudData.tags.length,
+          tasksUploaded: localTasks.length,
+          tagsUploaded: localTags.length,
+          tasksDownloaded: 0,
+          tagsDownloaded: 0,
         ),
       );
     } catch (e) {
@@ -298,25 +313,25 @@ class CloudSyncService {
   // Convert Task to Firestore document
   Map<String, dynamic> _taskToFirestore(Task task) {
     final json = task.toJson();
-    // Convert DateTime to Timestamp for Firestore
+    // Convert millisecondsSinceEpoch (int) to Timestamp for Firestore
     if (json['createdAt'] != null) {
-      json['createdAt'] = Timestamp.fromDate(DateTime.parse(json['createdAt']));
+      json['createdAt'] = Timestamp.fromMillisecondsSinceEpoch(json['createdAt'] as int);
     }
     if (json['dueDate'] != null) {
-      json['dueDate'] = Timestamp.fromDate(DateTime.parse(json['dueDate']));
+      json['dueDate'] = Timestamp.fromMillisecondsSinceEpoch(json['dueDate'] as int);
     }
     return json;
   }
 
   // Convert Firestore document to Task
   Task _taskFromFirestore(String id, Map<String, dynamic> data) {
-    // Convert Timestamps back to ISO strings
+    // Convert Timestamps back to millisecondsSinceEpoch (int)
     final json = Map<String, dynamic>.from(data);
     if (json['createdAt'] is Timestamp) {
-      json['createdAt'] = (json['createdAt'] as Timestamp).toDate().toIso8601String();
+      json['createdAt'] = (json['createdAt'] as Timestamp).millisecondsSinceEpoch;
     }
     if (json['dueDate'] is Timestamp) {
-      json['dueDate'] = (json['dueDate'] as Timestamp).toDate().toIso8601String();
+      json['dueDate'] = (json['dueDate'] as Timestamp).millisecondsSinceEpoch;
     }
     json['id'] = id;
     return Task.fromJson(json);

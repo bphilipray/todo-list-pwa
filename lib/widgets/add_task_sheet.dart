@@ -257,6 +257,14 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
     }
   }
 
+  /// Returns appropriate text color (black or white) based on background luminance
+  Color _getButtonTextColor(Color backgroundColor) {
+    // Calculate relative luminance using the formula from WCAG 2.0
+    final luminance = backgroundColor.computeLuminance();
+    // Use dark text on light backgrounds, light text on dark backgrounds
+    return luminance > 0.5 ? Colors.black : Colors.white;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -547,48 +555,44 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: RecurrenceType.values.map((type) {
                   final isSelected = _recurrence == type;
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: type != RecurrenceType.monthly ? 8 : 0,
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _recurrence = type);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _recurrence = type);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? colors.surfaceLight.withValues(alpha: 0.4)
-                                : colors.background,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isSelected
-                                  ? colors.surfaceLight
-                                  : Colors.transparent,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              type.label,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                color: isSelected
-                                    ? colors.textPrimary
-                                    : colors.textSecondary,
-                              ),
-                            ),
-                          ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colors.surfaceLight.withValues(alpha: 0.4)
+                            : colors.background,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected
+                              ? colors.surfaceLight
+                              : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        type.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: isSelected
+                              ? colors.textPrimary
+                              : colors.textSecondary,
                         ),
                       ),
                     ),
@@ -670,7 +674,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                 onPressed: _handleSave,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _getQuadrantColor(colors),
-                  foregroundColor: colors.isDark ? colors.textPrimary : Colors.white,
+                  foregroundColor: _getButtonTextColor(_getQuadrantColor(colors)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

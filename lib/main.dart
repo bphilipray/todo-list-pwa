@@ -61,6 +61,10 @@ class TaskMatrixAppState extends State<TaskMatrixApp> {
   late bool _isOnboardingCompleted;
   String? _firstTaskTitle;
 
+  /// Global key for ScaffoldMessenger to handle snackbars across nested scaffolds
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   AppColorTheme get currentTheme => _currentTheme;
 
   @override
@@ -103,9 +107,10 @@ class TaskMatrixAppState extends State<TaskMatrixApp> {
     return ThemeProvider(
       theme: _currentTheme,
       child: MaterialApp(
-        title: 'Task Matrix',
+        title: 'Quadrant',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.fromColorTheme(_currentTheme),
+        scaffoldMessengerKey: scaffoldMessengerKey,
         home: _isOnboardingCompleted
             ? MainScreen(initialTaskTitle: _firstTaskTitle)
             : OnboardingScreen(
