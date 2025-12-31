@@ -69,6 +69,7 @@ class NotificationService {
         description: _alarmChannelDescription,
         importance: Importance.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('alarm_sound'),
         enableVibration: true,
         enableLights: true,
         // Use alarm audio attributes for louder sound
@@ -178,6 +179,7 @@ class NotificationService {
         ongoing: false, // Not persistent (user can swipe away)
         // Sound and vibration
         playSound: true,
+        sound: const RawResourceAndroidNotificationSound('alarm_sound'),
         enableVibration: true,
         vibrationPattern: isUrgent
             ? Int64List.fromList([0, 500, 200, 500, 200, 500]) // Urgent: longer pattern
@@ -270,6 +272,7 @@ class NotificationService {
       fullScreenIntent: true,
       category: AndroidNotificationCategory.alarm,
       playSound: true,
+      sound: const RawResourceAndroidNotificationSound('alarm_sound'),
       enableVibration: true,
       vibrationPattern: Int64List.fromList([0, 400, 200, 400]),
     );
