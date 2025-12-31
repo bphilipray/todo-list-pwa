@@ -1,4 +1,4 @@
-package com.bphil.task_matrix
+package com.bphil.quadrant
 
 import io.flutter.embedding.android.FlutterActivity
 
