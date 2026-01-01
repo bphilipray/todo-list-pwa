@@ -6,6 +6,7 @@ import '../models/task.dart';
 import '../repositories/task_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/task_tile.dart';
+import '../widgets/empty_state.dart';
 
 enum TodayTab { today, upcoming, all }
 
@@ -15,6 +16,7 @@ class TodayScreen extends StatefulWidget {
   final TaskRepository repository;
   final Function(Task) onToggleComplete;
   final Function({Task? existingTask}) onEdit;
+  final Function(Task)? onViewDetails;
   final Function(Task) onDelete;
   final Function(Task) onToggleUrgent;
   final Function(Task) onToggleImportant;
@@ -27,6 +29,7 @@ class TodayScreen extends StatefulWidget {
     required this.repository,
     required this.onToggleComplete,
     required this.onEdit,
+    this.onViewDetails,
     required this.onDelete,
     required this.onToggleUrgent,
     required this.onToggleImportant,
@@ -54,6 +57,7 @@ class _TodayScreenState extends State<TodayScreen> {
         leading: IconButton(
           icon: const Icon(Icons.menu_rounded),
           onPressed: widget.onOpenDrawer,
+          tooltip: 'Open navigation menu',
         ),
         title: Text(
           _getTitle(),
@@ -202,12 +206,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final today = widget.repository.sortTasks(_todayTasks);
 
     if (overdue.isEmpty && today.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.wb_sunny_rounded,
-        title: 'All clear for today!',
-        subtitle: 'No tasks due today. Enjoy your day!',
-        colors: colors,
-      );
+      return EmptyStates.noTasksToday(colors, onAddTask: () => widget.onEdit(existingTask: null));
     }
 
     return ListView(
@@ -242,12 +241,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final upcoming = widget.repository.sortTasks(_upcomingTasks);
 
     if (upcoming.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.event_available_rounded,
-        title: 'No upcoming tasks',
-        subtitle: 'Nothing scheduled for the next 7 days',
-        colors: colors,
-      );
+      return EmptyStates.noUpcomingTasks(colors, onAddTask: () => widget.onEdit(existingTask: null));
     }
 
     // Group by date
@@ -271,12 +265,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final completed = all.where((t) => t.completed).toList();
 
     if (all.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.calendar_today_rounded,
-        title: 'No scheduled tasks',
-        subtitle: 'Tasks with due dates will appear here',
-        colors: colors,
-      );
+      return EmptyStates.noScheduledTasks(colors, onAddTask: () => widget.onEdit(existingTask: null));
     }
 
     return ListView(
@@ -360,6 +349,9 @@ class _TodayScreenState extends State<TodayScreen> {
       allTags: widget.tags,
       onToggleComplete: () => widget.onToggleComplete(task),
       onEdit: () => widget.onEdit(existingTask: task),
+      onViewDetails: widget.onViewDetails != null
+          ? () => widget.onViewDetails!(task)
+          : null,
       onDelete: () => widget.onDelete(task),
       onToggleUrgent: () => widget.onToggleUrgent(task),
       onToggleImportant: () => widget.onToggleImportant(task),

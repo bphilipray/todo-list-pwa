@@ -273,8 +273,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Sign in failed: $e'),
+            content: const Text(
+              'Unable to sign in with Google.\nPlease check your internet connection and try again.',
+            ),
             backgroundColor: _colors.error,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _signInWithGoogle,
+            ),
           ),
         );
       }
@@ -350,8 +358,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.result.error ?? 'Sync failed'),
+            content: Text(
+              result.result.error ??
+              'Cloud sync failed.\nPlease check your internet connection and try again.',
+            ),
             backgroundColor: _colors.error,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _syncData,
+            ),
           ),
         );
       }
@@ -401,8 +418,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.error ?? 'Import failed'),
+            content: Text(
+              result.error ??
+              'Unable to import backup file.\nPlease ensure the file is a valid backup.',
+            ),
             backgroundColor: _colors.error,
+            duration: const Duration(seconds: 5),
           ),
         );
         return;
@@ -1565,6 +1586,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
+                ),
                 );
               }).toList(),
             ),
@@ -1805,9 +1827,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: const Text(
+              'Unable to send test notification.\nPlease check notification permissions in Settings.',
+            ),
             backgroundColor: _colors.error,
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Help',
+              textColor: Colors.white,
+              onPressed: _showBatteryOptimizationHelp,
+            ),
           ),
         );
       }

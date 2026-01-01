@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:task_matrix/main.dart';
-import 'package:task_matrix/theme/app_theme.dart';
+import 'package:quadrant/main.dart';
+import 'package:quadrant/theme/app_theme.dart';
 
 void main() {
   testWidgets('App loads and shows Tasks title', (WidgetTester tester) async {

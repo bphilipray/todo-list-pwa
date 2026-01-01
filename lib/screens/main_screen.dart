@@ -11,6 +11,8 @@ import '../services/notification_service.dart';
 import '../services/speech_service.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/add_task_sheet.dart';
+import '../widgets/swipe_tutorial_overlay.dart';
+import '../widgets/task_detail_sheet.dart';
 import 'home_screen.dart';
 import 'inbox_screen.dart';
 import 'settings_screen.dart';
@@ -94,6 +96,21 @@ class _MainScreenState extends State<MainScreen> {
       _tasks = tasks;
       _isLoading = false;
     });
+
+    // Show swipe tutorial after initial load if needed
+    _showSwipeTutorialIfNeeded();
+  }
+
+  Future<void> _showSwipeTutorialIfNeeded() async {
+    // Only show on home screen with tasks
+    if (_currentScreen != AppScreen.home) return;
+    if (_tasks.isEmpty) return;
+
+    // Wait for UI to settle
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (!mounted) return;
+    await context.showSwipeTutorialIfNeeded();
   }
 
   Future<void> _saveTasks() async {
@@ -558,6 +575,25 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  void _showTaskDetailSheet(Task task) {
+    final colors = context.appColors;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => TaskDetailSheet(
+        task: task,
+        availableTags: _tags,
+        onEdit: () => _showAddTaskSheet(existingTask: task),
+        onToggleComplete: () => _toggleTaskComplete(task),
+        onDelete: () => _deleteTask(task),
+      ),
+    );
+  }
+
   void _navigateTo(AppScreen screen) {
     setState(() {
       _currentScreen = screen;
@@ -621,6 +657,7 @@ class _MainScreenState extends State<MainScreen> {
           repository: _repository,
           onToggleComplete: _toggleTaskComplete,
           onEdit: _showAddTaskSheet,
+          onViewDetails: _showTaskDetailSheet,
           onDelete: _deleteTask,
           onToggleUrgent: _toggleTaskUrgent,
           onToggleImportant: _toggleTaskImportant,
