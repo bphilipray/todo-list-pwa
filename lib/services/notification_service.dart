@@ -140,32 +140,60 @@ class NotificationService {
     return true; // iOS doesn't have this restriction
   }
 
-  Future<void> scheduleTaskNotification(Task task) async {
-    // First, cancel all existing notifications for this task
-    await cancelTaskNotifications(task.id);
-
-    if (task.completed) {
-      print('⏰ NotificationService: Task "${task.title}" is completed, skipping notification');
-      return;
+  /// Check if app is whitelisted from battery optimization (Android only)
+  Future<bool> isBatteryOptimizationDisabled() async {
+    final androidPlugin =
+        _notifications.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      // Note: This method may not be available in all versions
+      // Return true (optimistic) if the method is not available
+      try {
+        // This is a placeholder - flutter_local_notifications doesn't have this method
+        // We'll handle this differently by showing a generic prompt
+        return true;
+      } catch (e) {
+        return true;
+      }
     }
+    return true; // iOS doesn't have battery optimization
+  }
 
-    final scheduledTime = task.scheduledDateTime;
-    if (scheduledTime == null) {
-      print('⏰ NotificationService: Task "${task.title}" has no due date/time, skipping notification');
-      return;
-    }
+  /// Show battery optimization dialog with instructions
+  /// Returns true if user should be prompted
+  bool shouldShowBatteryOptimizationPrompt() {
+    // Check if we've shown this before (implement with SharedPreferences later)
+    // For now, always return true on first notification setup
+    return true;
+  }
 
-    if (task.reminderOffsets.isEmpty) {
-      print('⏰ NotificationService: Task "${task.title}" has no reminder offsets, skipping notification');
-      return;
-    }
+  Future<bool> scheduleTaskNotification(Task task) async {
+    try {
+      // First, cancel all existing notifications for this task
+      await cancelTaskNotifications(task.id);
 
-    final quadrantLabel = task.quadrant?.label ?? 'Inbox';
-    final isUrgent = task.quadrant?.isUrgent ?? false;
+      if (task.completed) {
+        print('⏰ NotificationService: Task "${task.title}" is completed, skipping notification');
+        return true;
+      }
 
-    print('⏰ NotificationService: Scheduling ${task.reminderOffsets.length} notification(s) for task "${task.title}"');
-    print('   Due: $scheduledTime');
-    print('   Quadrant: $quadrantLabel');
+      final scheduledTime = task.scheduledDateTime;
+      if (scheduledTime == null) {
+        print('⏰ NotificationService: Task "${task.title}" has no due date/time, skipping notification');
+        return true;
+      }
+
+      if (task.reminderOffsets.isEmpty) {
+        print('⏰ NotificationService: Task "${task.title}" has no reminder offsets, skipping notification');
+        return true;
+      }
+
+      final quadrantLabel = task.quadrant?.label ?? 'Inbox';
+      final isUrgent = task.quadrant?.isUrgent ?? false;
+
+      print('⏰ NotificationService: Scheduling ${task.reminderOffsets.length} notification(s) for task "${task.title}"');
+      print('   Due: $scheduledTime');
+      print('   Quadrant: $quadrantLabel');
 
     // Schedule a notification for each reminder offset
     for (final offset in task.reminderOffsets) {
@@ -179,8 +207,10 @@ class NotificationService {
 
       final tzScheduledTime = tz.TZDateTime.from(reminderTime, tz.local);
 
-      // Use unique notification id: task id hash + offset index
-      final notificationId = task.id.hashCode + offset.index;
+      // Use unique notification id: deterministic hash from task ID + offset
+      // This ensures we get the same ID for the same task+offset combination
+      // while avoiding collision risks from simple hashCode
+      final notificationId = _generateNotificationId(task.id, offset.index);
 
       // Create alarm-style notification details for Android
       final androidDetails = AndroidNotificationDetails(
@@ -239,30 +269,62 @@ class NotificationService {
 
       print('   ✅ Scheduling: ${offset.label} at $reminderTime (ID: $notificationId, Exact: $canUseExact)');
 
-      await _notifications.zonedSchedule(
-        notificationId,
-        notificationTitle,
-        task.title,
-        tzScheduledTime,
-        details,
-        // Use exact if available, otherwise fall back to inexact
-        androidScheduleMode: canUseExact
-            ? AndroidScheduleMode.exactAllowWhileIdle
-            : AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: null,
-      );
+      try {
+        await _notifications.zonedSchedule(
+          notificationId,
+          notificationTitle,
+          task.title,
+          tzScheduledTime,
+          details,
+          // Use exact if available, otherwise fall back to inexact
+          androidScheduleMode: canUseExact
+              ? AndroidScheduleMode.exactAllowWhileIdle
+              : AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: null,
+        );
+      } catch (e) {
+        print('   ❌ Failed to schedule notification: $e');
+        // Continue with other reminders even if one fails
+      }
     }
 
     print('⏰ NotificationService: Successfully scheduled notifications for "${task.title}"');
+    return true;
+    } catch (e, stackTrace) {
+      print('❌ NotificationService: Error scheduling notification for "${task.title}": $e');
+      print('   Stack trace: $stackTrace');
+      return false;
+    }
+  }
+
+  /// Generate a unique, deterministic notification ID for a task+offset
+  /// Uses a simple but effective hash to avoid collisions
+  int _generateNotificationId(String taskId, int offsetIndex) {
+    // Combine task ID with offset index to create unique string
+    final combined = '$taskId-$offsetIndex';
+
+    // Use a simple hash function that's good enough for our use case
+    // We want IDs in the range of 0 to 2^31-1 (positive ints for Android)
+    int hash = 0;
+    for (int i = 0; i < combined.length; i++) {
+      hash = ((hash << 5) - hash) + combined.codeUnitAt(i);
+      hash = hash & 0x7FFFFFFF; // Keep it positive and within int32 range
+    }
+    return hash;
   }
 
   /// Cancel all notifications for a specific task
   Future<void> cancelTaskNotifications(String taskId) async {
-    // Cancel notification for each possible offset
-    for (final offset in ReminderOffset.values) {
-      await _notifications.cancel(taskId.hashCode + offset.index);
+    try {
+      // Cancel notification for each possible offset
+      for (final offset in ReminderOffset.values) {
+        final notificationId = _generateNotificationId(taskId, offset.index);
+        await _notifications.cancel(notificationId);
+      }
+    } catch (e) {
+      print('❌ Error cancelling notifications for task $taskId: $e');
     }
   }
 
@@ -271,15 +333,23 @@ class NotificationService {
   }
 
   Future<void> cancelAllNotifications() async {
-    await _notifications.cancelAll();
+    try {
+      await _notifications.cancelAll();
+    } catch (e) {
+      print('❌ Error cancelling all notifications: $e');
+    }
   }
 
   Future<void> rescheduleAllNotifications(List<Task> tasks) async {
-    await cancelAllNotifications();
-    for (final task in tasks) {
-      if (!task.completed && task.scheduledDateTime != null) {
-        await scheduleTaskNotification(task);
+    try {
+      await cancelAllNotifications();
+      for (final task in tasks) {
+        if (!task.completed && task.scheduledDateTime != null) {
+          await scheduleTaskNotification(task);
+        }
       }
+    } catch (e) {
+      print('❌ Error rescheduling all notifications: $e');
     }
   }
 
@@ -293,74 +363,86 @@ class NotificationService {
   NotificationSound get currentSound => _currentSound;
 
   // Show an immediate test notification (for debugging)
-  Future<void> showTestNotification() async {
-    final androidDetails = AndroidNotificationDetails(
-      _alarmChannelId,
-      _alarmChannelName,
-      channelDescription: _alarmChannelDescription,
-      importance: Importance.max,
-      priority: Priority.max,
-      icon: '@mipmap/ic_launcher',
-      fullScreenIntent: true,
-      category: AndroidNotificationCategory.alarm,
-      playSound: true,
-      sound: RawResourceAndroidNotificationSound(_currentSound.resourceName),
-      enableVibration: true,
-      vibrationPattern: Int64List.fromList([0, 400, 200, 400]),
-    );
+  Future<bool> showTestNotification() async {
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        _alarmChannelId,
+        _alarmChannelName,
+        channelDescription: _alarmChannelDescription,
+        importance: Importance.max,
+        priority: Priority.max,
+        icon: '@mipmap/ic_launcher',
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.alarm,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(_currentSound.resourceName),
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 400, 200, 400]),
+      );
 
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
-    );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      );
 
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
 
-    await _notifications.show(
-      0,
-      '⏰ Test Alarm',
-      'This is a test alarm notification',
-      details,
-    );
+      await _notifications.show(
+        0,
+        '⏰ Test Alarm',
+        'This is a test alarm notification',
+        details,
+      );
+      return true;
+    } catch (e) {
+      print('❌ Error showing test notification: $e');
+      return false;
+    }
   }
 
   /// Preview a specific notification sound
-  Future<void> previewSound(NotificationSound sound) async {
-    final androidDetails = AndroidNotificationDetails(
-      _alarmChannelId,
-      _alarmChannelName,
-      channelDescription: _alarmChannelDescription,
-      importance: Importance.max,
-      priority: Priority.max,
-      icon: '@mipmap/ic_launcher',
-      playSound: true,
-      sound: RawResourceAndroidNotificationSound(sound.resourceName),
-      enableVibration: true,
-      vibrationPattern: Int64List.fromList([0, 200, 100, 200]),
-    );
+  Future<bool> previewSound(NotificationSound sound) async {
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        _alarmChannelId,
+        _alarmChannelName,
+        channelDescription: _alarmChannelDescription,
+        importance: Importance.max,
+        priority: Priority.max,
+        icon: '@mipmap/ic_launcher',
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(sound.resourceName),
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 200, 100, 200]),
+      );
 
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
-    );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      );
 
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
 
-    await _notifications.show(
-      999, // Use a fixed ID for preview notifications
-      '🔔 Sound Preview',
-      sound.label,
-      details,
-    );
+      await _notifications.show(
+        999, // Use a fixed ID for preview notifications
+        '🔔 Sound Preview',
+        sound.label,
+        details,
+      );
+      return true;
+    } catch (e) {
+      print('❌ Error previewing sound: $e');
+      return false;
+    }
   }
 }

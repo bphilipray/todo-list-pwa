@@ -1498,8 +1498,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               runSpacing: 8,
               children: NotificationSound.values.map((sound) {
                 final isSelected = _selectedSound == sound;
+                final isDisabled = !sound.isAvailable;
                 return InkWell(
-                  onTap: () => _changeNotificationSound(sound),
+                  onTap: isDisabled ? null : () => _changeNotificationSound(sound),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -1507,57 +1508,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? _colors.accent.withOpacity(0.1)
-                          : _colors.surfaceLight.withOpacity(0.3),
+                      color: isDisabled
+                          ? _colors.surfaceLight.withOpacity(0.1)
+                          : isSelected
+                              ? _colors.accent.withOpacity(0.1)
+                              : _colors.surfaceLight.withOpacity(0.3),
                       border: Border.all(
-                        color: isSelected
-                            ? _colors.accent
-                            : _colors.surfaceLight,
+                        color: isDisabled
+                            ? _colors.surfaceLight.withOpacity(0.3)
+                            : isSelected
+                                ? _colors.accent
+                                : _colors.surfaceLight,
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isSelected)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: Icon(
-                              Icons.check_circle_rounded,
-                              color: _colors.accent,
-                              size: 18,
+                    child: Opacity(
+                      opacity: isDisabled ? 0.4 : 1.0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isSelected)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Icon(
+                                Icons.check_circle_rounded,
+                                color: _colors.accent,
+                                size: 18,
+                              ),
+                            ),
+                          Text(
+                            sound.displayLabel,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight:
+                                  isSelected ? FontWeight.w600 : FontWeight.w500,
+                              color: isSelected
+                                  ? _colors.accent
+                                  : _colors.textPrimary,
                             ),
                           ),
-                        Text(
-                          sound.label,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w500,
-                            color: isSelected
-                                ? _colors.accent
-                                : _colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: Icon(
-                            Icons.play_arrow_rounded,
-                            size: 18,
-                            color: _colors.textSecondary,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => _previewSound(sound),
-                          tooltip: 'Preview',
-                        ),
+                          if (sound.isAvailable) ...[
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(
+                                Icons.play_arrow_rounded,
+                                size: 18,
+                                color: _colors.textSecondary,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () => _previewSound(sound),
+                              tooltip: 'Preview',
+                            ),
+                          ],
                       ],
                     ),
                   ),
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap a sound to select it, or use the play button to preview.',
+              style: TextStyle(
+                fontSize: 12,
+                color: _colors.textSecondary.withOpacity(0.7),
+                fontStyle: FontStyle.italic,
+              ),
             ),
             const SizedBox(height: 24),
             // Divider
@@ -1604,8 +1622,145 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            // Battery Optimization Help
+            TextButton.icon(
+              onPressed: _showBatteryOptimizationHelp,
+              icon: Icon(
+                Icons.battery_alert_rounded,
+                size: 18,
+                color: _colors.textSecondary,
+              ),
+              label: Text(
+                'Notifications not working? Tap for help',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _colors.textSecondary,
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showBatteryOptimizationHelp() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _colors.surface,
+        title: Row(
+          children: [
+            Icon(Icons.battery_alert_rounded, color: _colors.accent),
+            const SizedBox(width: 12),
+            Text(
+              'Battery Optimization',
+              style: TextStyle(color: _colors.textPrimary),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'If notifications aren\'t firing on time, your device may be killing the app to save battery.',
+                style: TextStyle(color: _colors.textPrimary),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'To fix this:',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: _colors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildHelpStep('1', 'Open your device Settings'),
+              _buildHelpStep('2', 'Go to Apps → Quadrant'),
+              _buildHelpStep('3', 'Tap Battery or Battery Usage'),
+              _buildHelpStep('4', 'Select "Unrestricted" or "No restrictions"'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _colors.surfaceLight.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Device-Specific:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: _colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '• Xiaomi/MIUI: Also disable "Battery Saver" in Security app\n'
+                      '• Huawei/EMUI: Also enable "Manual Launch"\n'
+                      '• OnePlus: Advanced Battery Settings → Unrestricted\n'
+                      '• Samsung: Settings → Apps → Special Access → Optimize Battery Usage → Turn off for Quadrant',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Got it', style: TextStyle(color: _colors.accent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHelpStep(String number, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _colors.accent.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _colors.accent,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: _colors.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1624,24 +1779,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _sendTestNotification() async {
-    // Check permission status
-    final canScheduleExact = await _notificationService.canScheduleExactAlarms();
+    try {
+      // Check permission status
+      final canScheduleExact = await _notificationService.canScheduleExactAlarms();
 
-    // Show the test notification
-    await _notificationService.showTestNotification();
+      // Show the test notification
+      final success = await _notificationService.showTestNotification();
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            canScheduleExact
-                ? 'Test notification sent! Check your notification shade.'
-                : 'Test sent (inexact mode). Exact alarms not available on this device.',
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? (canScheduleExact
+                      ? 'Test notification sent! Check your notification shade.'
+                      : 'Test sent (inexact mode). Exact alarms not available on this device.')
+                  : 'Failed to send notification. Check app permissions.',
+            ),
+            backgroundColor: success ? _colors.success : _colors.error,
+            duration: const Duration(seconds: 4),
           ),
-          backgroundColor: _colors.success,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: _colors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
