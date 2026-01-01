@@ -357,15 +357,15 @@ class _MainScreenState extends State<MainScreen> {
     );
     setState(() => _tasks.add(task));
     _saveTasks();
-    if (task.quadrant != null) {
-      _notificationService.scheduleTaskNotification(task);
-    }
+    // Schedule notification for all tasks with due dates (including inbox items)
+    _notificationService.scheduleTaskNotification(task);
     // Sync to calendar
     _syncTaskToCalendar(task);
   }
 
   void _addToInbox(String title) {
-    _addTask(title, null, null, null, null, null, [], RecurrenceType.none, [], []);
+    // Default to "at time" reminder for inbox tasks
+    _addTask(title, null, null, null, null, null, [], RecurrenceType.none, [], [ReminderOffset.atTime]);
   }
 
   void _updateTask(

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../main.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
+import '../models/notification_sound.dart';
 import '../services/auth_service.dart';
 import '../services/backup_service.dart';
 import '../services/calendar_service.dart';
@@ -45,6 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
   final CloudSyncService _cloudSyncService = CloudSyncService();
   final CalendarService _calendarService = CalendarService();
+  final NotificationService _notificationService = NotificationService();
 
   bool _isExporting = false;
   bool _isImporting = false;
@@ -59,6 +61,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _calendarDiagnosticInfo;
   bool _isLoadingCalendars = false;
   bool _isSyncingCalendar = false;
+
+  // Notification sound state
+  NotificationSound _selectedSound = NotificationSound.alarm;
 
   int get _totalTasks => widget.tasks.length;
   int get _completedTasks => widget.tasks.where((t) => t.completed).length;
@@ -78,6 +83,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadLastSyncTime();
     _loadCalendarSettings();
+    _loadNotificationSound();
+  }
+
+  Future<void> _loadNotificationSound() async {
+    final sound = _notificationService.currentSound;
+    if (mounted) {
+      setState(() {
+        _selectedSound = sound;
+      });
+    }
   }
 
   Future<void> _loadLastSyncTime() async {
@@ -1449,6 +1464,106 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Notification Sound Selection
+            Row(
+              children: [
+                Icon(
+                  Icons.music_note_rounded,
+                  color: _colors.accent,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Notification Sound',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: _colors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Choose which sound plays when task reminders are due.',
+              style: TextStyle(
+                fontSize: 14,
+                color: _colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Sound options grid
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: NotificationSound.values.map((sound) {
+                final isSelected = _selectedSound == sound;
+                return InkWell(
+                  onTap: () => _changeNotificationSound(sound),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? _colors.accent.withOpacity(0.1)
+                          : _colors.surfaceLight.withOpacity(0.3),
+                      border: Border.all(
+                        color: isSelected
+                            ? _colors.accent
+                            : _colors.surfaceLight,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isSelected)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Icon(
+                              Icons.check_circle_rounded,
+                              color: _colors.accent,
+                              size: 18,
+                            ),
+                          ),
+                        Text(
+                          sound.label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: isSelected
+                                ? _colors.accent
+                                : _colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(
+                            Icons.play_arrow_rounded,
+                            size: 18,
+                            color: _colors.textSecondary,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => _previewSound(sound),
+                          tooltip: 'Preview',
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 24),
+            // Divider
+            Divider(color: _colors.surfaceLight.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            // Test Notification Section
             Row(
               children: [
                 Icon(
@@ -1495,14 +1610,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _sendTestNotification() async {
-    final notificationService = NotificationService();
+  Future<void> _changeNotificationSound(NotificationSound sound) async {
+    setState(() {
+      _selectedSound = sound;
+    });
+    await _notificationService.setNotificationSound(sound);
+    HapticFeedback.selectionClick();
+  }
 
+  Future<void> _previewSound(NotificationSound sound) async {
+    HapticFeedback.lightImpact();
+    await _notificationService.previewSound(sound);
+  }
+
+  Future<void> _sendTestNotification() async {
     // Check permission status
-    final canScheduleExact = await notificationService.canScheduleExactAlarms();
+    final canScheduleExact = await _notificationService.canScheduleExactAlarms();
 
     // Show the test notification
-    await notificationService.showTestNotification();
+    await _notificationService.showTestNotification();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

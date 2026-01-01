@@ -6,6 +6,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import '../models/task.dart';
+import '../models/notification_sound.dart';
+import '../repositories/notification_sound_repository.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -14,8 +16,10 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+  final NotificationSoundRepository _soundRepository = NotificationSoundRepository();
 
   bool _isInitialized = false;
+  NotificationSound _currentSound = NotificationSound.alarm;
 
   // Alarm-style notification channel
   static const String _alarmChannelId = 'task_alarms';
@@ -25,6 +29,9 @@ class NotificationService {
 
   Future<void> initialize() async {
     if (_isInitialized) return;
+
+    // Load saved notification sound
+    _currentSound = await _soundRepository.loadSound();
 
     // Initialize timezone
     tz_data.initializeTimeZones();
@@ -69,7 +76,7 @@ class NotificationService {
         description: _alarmChannelDescription,
         importance: Importance.max,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('alarm_sound'),
+        sound: RawResourceAndroidNotificationSound('alarm_sound'), // Default channel sound
         enableVibration: true,
         enableLights: true,
         // Use alarm audio attributes for louder sound
@@ -138,16 +145,27 @@ class NotificationService {
     await cancelTaskNotifications(task.id);
 
     if (task.completed) {
+      print('⏰ NotificationService: Task "${task.title}" is completed, skipping notification');
       return;
     }
 
     final scheduledTime = task.scheduledDateTime;
-    if (scheduledTime == null || task.reminderOffsets.isEmpty) {
+    if (scheduledTime == null) {
+      print('⏰ NotificationService: Task "${task.title}" has no due date/time, skipping notification');
+      return;
+    }
+
+    if (task.reminderOffsets.isEmpty) {
+      print('⏰ NotificationService: Task "${task.title}" has no reminder offsets, skipping notification');
       return;
     }
 
     final quadrantLabel = task.quadrant?.label ?? 'Inbox';
     final isUrgent = task.quadrant?.isUrgent ?? false;
+
+    print('⏰ NotificationService: Scheduling ${task.reminderOffsets.length} notification(s) for task "${task.title}"');
+    print('   Due: $scheduledTime');
+    print('   Quadrant: $quadrantLabel');
 
     // Schedule a notification for each reminder offset
     for (final offset in task.reminderOffsets) {
@@ -155,6 +173,7 @@ class NotificationService {
 
       // Don't schedule if the reminder time has passed
       if (reminderTime.isBefore(DateTime.now())) {
+        print('   ⏰ Skipping ${offset.label} - time has passed ($reminderTime)');
         continue;
       }
 
@@ -177,9 +196,9 @@ class NotificationService {
         visibility: NotificationVisibility.public,
         autoCancel: true, // Dismiss when tapped
         ongoing: false, // Not persistent (user can swipe away)
-        // Sound and vibration
+        // Sound and vibration - use selected sound
         playSound: true,
-        sound: const RawResourceAndroidNotificationSound('alarm_sound'),
+        sound: RawResourceAndroidNotificationSound(_currentSound.resourceName),
         enableVibration: true,
         vibrationPattern: isUrgent
             ? Int64List.fromList([0, 500, 200, 500, 200, 500]) // Urgent: longer pattern
@@ -218,6 +237,8 @@ class NotificationService {
       // Check if we can use exact scheduling
       final canUseExact = await canScheduleExactAlarms();
 
+      print('   ✅ Scheduling: ${offset.label} at $reminderTime (ID: $notificationId, Exact: $canUseExact)');
+
       await _notifications.zonedSchedule(
         notificationId,
         notificationTitle,
@@ -233,6 +254,8 @@ class NotificationService {
         matchDateTimeComponents: null,
       );
     }
+
+    print('⏰ NotificationService: Successfully scheduled notifications for "${task.title}"');
   }
 
   /// Cancel all notifications for a specific task
@@ -260,6 +283,15 @@ class NotificationService {
     }
   }
 
+  /// Change the notification sound (call this when user changes preference)
+  Future<void> setNotificationSound(NotificationSound sound) async {
+    _currentSound = sound;
+    await _soundRepository.saveSound(sound);
+  }
+
+  /// Get current notification sound
+  NotificationSound get currentSound => _currentSound;
+
   // Show an immediate test notification (for debugging)
   Future<void> showTestNotification() async {
     final androidDetails = AndroidNotificationDetails(
@@ -272,7 +304,7 @@ class NotificationService {
       fullScreenIntent: true,
       category: AndroidNotificationCategory.alarm,
       playSound: true,
-      sound: const RawResourceAndroidNotificationSound('alarm_sound'),
+      sound: RawResourceAndroidNotificationSound(_currentSound.resourceName),
       enableVibration: true,
       vibrationPattern: Int64List.fromList([0, 400, 200, 400]),
     );
@@ -293,6 +325,41 @@ class NotificationService {
       0,
       '⏰ Test Alarm',
       'This is a test alarm notification',
+      details,
+    );
+  }
+
+  /// Preview a specific notification sound
+  Future<void> previewSound(NotificationSound sound) async {
+    final androidDetails = AndroidNotificationDetails(
+      _alarmChannelId,
+      _alarmChannelName,
+      channelDescription: _alarmChannelDescription,
+      importance: Importance.max,
+      priority: Priority.max,
+      icon: '@mipmap/ic_launcher',
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound(sound.resourceName),
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 200, 100, 200]),
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.show(
+      999, // Use a fixed ID for preview notifications
+      '🔔 Sound Preview',
+      sound.label,
       details,
     );
   }
