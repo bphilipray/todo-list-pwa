@@ -55,6 +55,15 @@ android {
             )
         }
     }
+
+    // Customize APK output filename
+    applicationVariants.all {
+        outputs.all {
+            if (this is com.android.build.gradle.internal.api.ApkVariantOutputImpl) {
+                this.outputFileName = "quadrant-${buildType.name}.apk"
+            }
+        }
+    }
 }
 
 flutter {

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../main.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
+import '../models/notification_sound.dart';
 import '../services/auth_service.dart';
 import '../services/backup_service.dart';
 import '../services/calendar_service.dart';
@@ -45,6 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
   final CloudSyncService _cloudSyncService = CloudSyncService();
   final CalendarService _calendarService = CalendarService();
+  final NotificationService _notificationService = NotificationService();
 
   bool _isExporting = false;
   bool _isImporting = false;
@@ -59,6 +61,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _calendarDiagnosticInfo;
   bool _isLoadingCalendars = false;
   bool _isSyncingCalendar = false;
+
+  // Notification sound state
+  NotificationSound _selectedSound = NotificationSound.alarm;
 
   int get _totalTasks => widget.tasks.length;
   int get _completedTasks => widget.tasks.where((t) => t.completed).length;
@@ -78,6 +83,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadLastSyncTime();
     _loadCalendarSettings();
+    _loadNotificationSound();
+  }
+
+  Future<void> _loadNotificationSound() async {
+    final sound = _notificationService.currentSound;
+    if (mounted) {
+      setState(() {
+        _selectedSound = sound;
+      });
+    }
   }
 
   Future<void> _loadLastSyncTime() async {
@@ -258,8 +273,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Sign in failed: $e'),
+            content: const Text(
+              'Unable to sign in with Google.\nPlease check your internet connection and try again.',
+            ),
             backgroundColor: _colors.error,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _signInWithGoogle,
+            ),
           ),
         );
       }
@@ -335,8 +358,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.result.error ?? 'Sync failed'),
+            content: Text(
+              result.result.error ??
+              'Cloud sync failed.\nPlease check your internet connection and try again.',
+            ),
             backgroundColor: _colors.error,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _syncData,
+            ),
           ),
         );
       }
@@ -386,8 +418,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.error ?? 'Import failed'),
+            content: Text(
+              result.error ??
+              'Unable to import backup file.\nPlease ensure the file is a valid backup.',
+            ),
             backgroundColor: _colors.error,
+            duration: const Duration(seconds: 5),
           ),
         );
         return;
@@ -1449,6 +1485,125 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Notification Sound Selection
+            Row(
+              children: [
+                Icon(
+                  Icons.music_note_rounded,
+                  color: _colors.accent,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Notification Sound',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: _colors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Choose which sound plays when task reminders are due.',
+              style: TextStyle(
+                fontSize: 14,
+                color: _colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Sound options grid
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: NotificationSound.values.map((sound) {
+                final isSelected = _selectedSound == sound;
+                final isDisabled = !sound.isAvailable;
+                return InkWell(
+                  onTap: isDisabled ? null : () => _changeNotificationSound(sound),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDisabled
+                          ? _colors.surfaceLight.withOpacity(0.1)
+                          : isSelected
+                              ? _colors.accent.withOpacity(0.1)
+                              : _colors.surfaceLight.withOpacity(0.3),
+                      border: Border.all(
+                        color: isDisabled
+                            ? _colors.surfaceLight.withOpacity(0.3)
+                            : isSelected
+                                ? _colors.accent
+                                : _colors.surfaceLight,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Opacity(
+                      opacity: isDisabled ? 0.4 : 1.0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isSelected)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Icon(
+                                Icons.check_circle_rounded,
+                                color: _colors.accent,
+                                size: 18,
+                              ),
+                            ),
+                          Text(
+                            sound.displayLabel,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight:
+                                  isSelected ? FontWeight.w600 : FontWeight.w500,
+                              color: isSelected
+                                  ? _colors.accent
+                                  : _colors.textPrimary,
+                            ),
+                          ),
+                          if (sound.isAvailable) ...[
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(
+                                Icons.play_arrow_rounded,
+                                size: 18,
+                                color: _colors.textSecondary,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () => _previewSound(sound),
+                              tooltip: 'Preview',
+                            ),
+                          ],
+                      ],
+                    ),
+                  ),
+                ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap a sound to select it, or use the play button to preview.',
+              style: TextStyle(
+                fontSize: 12,
+                color: _colors.textSecondary.withOpacity(0.7),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Divider
+            Divider(color: _colors.surfaceLight.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            // Test Notification Section
             Row(
               children: [
                 Icon(
@@ -1489,33 +1644,202 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            // Battery Optimization Help
+            TextButton.icon(
+              onPressed: _showBatteryOptimizationHelp,
+              icon: Icon(
+                Icons.battery_alert_rounded,
+                size: 18,
+                color: _colors.textSecondary,
+              ),
+              label: Text(
+                'Notifications not working? Tap for help',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _colors.textSecondary,
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _sendTestNotification() async {
-    final notificationService = NotificationService();
-
-    // Check permission status
-    final canScheduleExact = await notificationService.canScheduleExactAlarms();
-
-    // Show the test notification
-    await notificationService.showTestNotification();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            canScheduleExact
-                ? 'Test notification sent! Check your notification shade.'
-                : 'Test sent (inexact mode). Exact alarms not available on this device.',
-          ),
-          backgroundColor: _colors.success,
-          duration: const Duration(seconds: 4),
+  void _showBatteryOptimizationHelp() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _colors.surface,
+        title: Row(
+          children: [
+            Icon(Icons.battery_alert_rounded, color: _colors.accent),
+            const SizedBox(width: 12),
+            Text(
+              'Battery Optimization',
+              style: TextStyle(color: _colors.textPrimary),
+            ),
+          ],
         ),
-      );
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'If notifications aren\'t firing on time, your device may be killing the app to save battery.',
+                style: TextStyle(color: _colors.textPrimary),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'To fix this:',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: _colors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildHelpStep('1', 'Open your device Settings'),
+              _buildHelpStep('2', 'Go to Apps → Quadrant'),
+              _buildHelpStep('3', 'Tap Battery or Battery Usage'),
+              _buildHelpStep('4', 'Select "Unrestricted" or "No restrictions"'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _colors.surfaceLight.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Device-Specific:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: _colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '• Xiaomi/MIUI: Also disable "Battery Saver" in Security app\n'
+                      '• Huawei/EMUI: Also enable "Manual Launch"\n'
+                      '• OnePlus: Advanced Battery Settings → Unrestricted\n'
+                      '• Samsung: Settings → Apps → Special Access → Optimize Battery Usage → Turn off for Quadrant',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Got it', style: TextStyle(color: _colors.accent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHelpStep(String number, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _colors.accent.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _colors.accent,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: _colors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _changeNotificationSound(NotificationSound sound) async {
+    setState(() {
+      _selectedSound = sound;
+    });
+    await _notificationService.setNotificationSound(sound);
+    HapticFeedback.selectionClick();
+  }
+
+  Future<void> _previewSound(NotificationSound sound) async {
+    HapticFeedback.lightImpact();
+    await _notificationService.previewSound(sound);
+  }
+
+  Future<void> _sendTestNotification() async {
+    try {
+      // Check permission status
+      final canScheduleExact = await _notificationService.canScheduleExactAlarms();
+
+      // Show the test notification
+      final success = await _notificationService.showTestNotification();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? (canScheduleExact
+                      ? 'Test notification sent! Check your notification shade.'
+                      : 'Test sent (inexact mode). Exact alarms not available on this device.')
+                  : 'Failed to send notification. Check app permissions.',
+            ),
+            backgroundColor: success ? _colors.success : _colors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Unable to send test notification.\nPlease check notification permissions in Settings.',
+            ),
+            backgroundColor: _colors.error,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Help',
+              textColor: Colors.white,
+              onPressed: _showBatteryOptimizationHelp,
+            ),
+          ),
+        );
+      }
     }
   }
 

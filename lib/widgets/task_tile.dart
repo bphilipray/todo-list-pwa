@@ -11,6 +11,7 @@ class TaskTile extends StatelessWidget {
   final List<Tag> allTags;
   final VoidCallback onToggleComplete;
   final VoidCallback onEdit;
+  final VoidCallback? onViewDetails;
   final VoidCallback onDelete;
   final VoidCallback onToggleUrgent;
   final VoidCallback onToggleImportant;
@@ -21,6 +22,7 @@ class TaskTile extends StatelessWidget {
     required this.allTags,
     required this.onToggleComplete,
     required this.onEdit,
+    this.onViewDetails,
     required this.onDelete,
     required this.onToggleUrgent,
     required this.onToggleImportant,
@@ -35,18 +37,22 @@ class TaskTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return Dismissible(
-      key: Key(task.id),
-      background: _buildSwipeBackground(
-        color: colors.success,
-        icon: Icons.check_rounded,
-        alignment: Alignment.centerLeft,
-      ),
-      secondaryBackground: _buildSwipeBackground(
-        color: colors.error,
-        icon: Icons.delete_rounded,
-        alignment: Alignment.centerRight,
-      ),
+    return Semantics(
+      label: _buildSemanticLabel(),
+      button: true,
+      enabled: true,
+      child: Dismissible(
+        key: Key(task.id),
+        background: _buildSwipeBackground(
+          color: colors.success,
+          icon: Icons.check_rounded,
+          alignment: Alignment.centerLeft,
+        ),
+        secondaryBackground: _buildSwipeBackground(
+          color: colors.error,
+          icon: Icons.delete_rounded,
+          alignment: Alignment.centerRight,
+        ),
       confirmDismiss: (direction) async {
         HapticFeedback.lightImpact();
         if (direction == DismissDirection.startToEnd) {
@@ -65,6 +71,12 @@ class TaskTile extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: InkWell(
           onTap: onEdit,
+          onLongPress: onViewDetails != null
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  onViewDetails!();
+                }
+              : null,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -93,7 +105,42 @@ class TaskTile extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
+  }
+
+  String _buildSemanticLabel() {
+    final parts = <String>[task.title];
+
+    if (task.completed) {
+      parts.add('completed');
+    } else {
+      parts.add('not completed');
+    }
+
+    if (task.quadrant != null) {
+      parts.add(task.quadrant!.label);
+    } else {
+      parts.add('in inbox');
+    }
+
+    if (task.dueDate != null) {
+      if (task.isOverdue) {
+        parts.add('overdue');
+      } else if (task.isDueToday) {
+        parts.add('due today');
+      } else if (task.isDueTomorrow) {
+        parts.add('due tomorrow');
+      }
+    }
+
+    if (task.hasSubtasks) {
+      parts.add('${task.completedSubtasksCount} of ${task.totalSubtasksCount} subtasks completed');
+    }
+
+    parts.add('Tap to edit, long press for details, swipe right to complete, swipe left to delete');
+
+    return parts.join(', ');
   }
 
   Widget _buildSwipeBackground({

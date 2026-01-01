@@ -6,6 +6,7 @@ import '../models/task.dart';
 import '../repositories/task_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/voice_input_button.dart';
+import '../widgets/empty_state.dart';
 
 class InboxScreen extends StatefulWidget {
   final List<Task> tasks;
@@ -66,6 +67,7 @@ class _InboxScreenState extends State<InboxScreen> {
         leading: IconButton(
           icon: const Icon(Icons.menu_rounded),
           onPressed: widget.onOpenDrawer,
+          tooltip: 'Open navigation menu',
         ),
         title: const Text(
           'Inbox',
@@ -211,36 +213,7 @@ class _InboxScreenState extends State<InboxScreen> {
   }
 
   Widget _buildEmptyState(AppColorTheme colors) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.inbox_rounded,
-            size: 64,
-            color: colors.textSecondary.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Inbox is empty',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: colors.textSecondary.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Capture thoughts without worrying\nabout priority right now',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: colors.textSecondary.withValues(alpha: 0.5),
-            ),
-          ),
-        ],
-      ),
-    );
+    return EmptyStates.emptyInbox(colors);
   }
 
   Widget _buildInboxList(AppColorTheme colors) {

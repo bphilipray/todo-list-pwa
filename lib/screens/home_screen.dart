@@ -137,10 +137,12 @@ class _HomeContentState extends State<HomeContent> {
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: _stopSearch,
+                tooltip: 'Close search',
               )
             : IconButton(
                 icon: const Icon(Icons.menu_rounded),
                 onPressed: widget.onOpenDrawer,
+                tooltip: 'Open navigation menu',
               ),
         title: _isSearching
             ? TextField(
@@ -173,21 +175,28 @@ class _HomeContentState extends State<HomeContent> {
               onPressed: () {
                 _searchController.clear();
               },
+              tooltip: 'Clear search',
             )
           else ...[
             IconButton(
               icon: const Icon(Icons.search_rounded),
               onPressed: _startSearch,
+              tooltip: 'Search tasks',
             ),
             if (_nonInboxTasks.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Center(
-                  child: Text(
-                    '${_nonInboxTasks.where((t) => t.completed).length}/${_nonInboxTasks.length}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colors.textSecondary,
+                  child: Semantics(
+                    label: '${_nonInboxTasks.where((t) => t.completed).length} of ${_nonInboxTasks.length} tasks completed',
+                    child: ExcludeSemantics(
+                      child: Text(
+                        '${_nonInboxTasks.where((t) => t.completed).length}/${_nonInboxTasks.length}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colors.textSecondary,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -256,12 +265,16 @@ class _HomeContentState extends State<HomeContent> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: widget.onClearTagFilter,
-                              child: Icon(
-                                Icons.close_rounded,
-                                size: 16,
-                                color: _selectedTag!.color,
+                            Semantics(
+                              label: 'Clear tag filter',
+                              button: true,
+                              child: GestureDetector(
+                                onTap: widget.onClearTagFilter,
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  size: 16,
+                                  color: _selectedTag!.color,
+                                ),
                               ),
                             ),
                           ],
@@ -324,10 +337,15 @@ class _HomeContentState extends State<HomeContent> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: widget.onAddTask,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add Task'),
+      floatingActionButton: Semantics(
+        label: 'Add new task',
+        button: true,
+        child: FloatingActionButton.extended(
+          onPressed: widget.onAddTask,
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Add Task'),
+          tooltip: 'Create a new task',
+        ),
       ),
     );
   }
